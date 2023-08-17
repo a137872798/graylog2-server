@@ -80,6 +80,9 @@ import static org.graylog.schema.GraylogSchemaFields.FIELD_ILLUMINATE_TAGS;
 import static org.graylog2.plugin.Tools.buildElasticSearchTimeFormat;
 import static org.joda.time.DateTimeZone.UTC;
 
+/**
+ * 虽然实现了Messages接口  实际上迭代时还是只能返回这条消息
+ */
 @NotThreadSafe
 public class Message implements Messages, Indexable {
     private static final Logger LOG = LoggerFactory.getLogger(Message.class);
@@ -278,6 +281,9 @@ public class Message implements Messages, Indexable {
     @Deprecated
     public static final Function<Message, String> ID_FUNCTION = new MessageIdFunction();
 
+    /**
+     * 存储一些自定义字段
+     */
     private final Map<String, Object> fields = Maps.newHashMap();
     private Set<Stream> streams = Sets.newHashSet();
     private Set<IndexSet> indexSets = Sets.newHashSet();

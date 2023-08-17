@@ -31,7 +31,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.graylog2.grok.GrokPatternService.ImportStrategy.DROP_ALL_EXISTING;
 
+/**
+ * 正则服务模板
+ */
 abstract class GrokPatternServiceImpl implements GrokPatternService {
+
+
     @Override
     public Map<String, Object> match(GrokPattern pattern, String sampleData) throws GrokException {
         final Set<GrokPattern> patterns = loadAll();

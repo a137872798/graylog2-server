@@ -31,7 +31,12 @@ import java.util.concurrent.ThreadFactory;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 通过该对象生成 clusterEventBus
+ */
 public class ClusterEventBusProvider implements Provider<ClusterEventBus> {
+
+    // 描述并发度
     private final int asyncEventbusProcessors;
     private final MetricRegistry metricRegistry;
 

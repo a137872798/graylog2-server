@@ -51,6 +51,7 @@ import java.util.Optional;
 
 /**
  * Helper class to hold configuration of Graylog
+ * 囊括graylog需要的各种配置
  */
 @SuppressWarnings("FieldMayBeFinal")
 public class Configuration extends BaseConfiguration {

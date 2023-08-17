@@ -28,6 +28,7 @@ import static java.util.Objects.requireNonNull;
  * {@link InetSocketAddress} does not support finding out whether an IP address has been reverse looked up or not.
  * However, we need to avoid triggering a name service lookup unless specifically asked to.
  * This class exists to make the reverse lookup step explicit in the code.
+ * 代表一个网络地址
  */
 public class ResolvableInetSocketAddress {
     private final InetSocketAddress inetSocketAddress;

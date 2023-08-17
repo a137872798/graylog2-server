@@ -19,6 +19,9 @@ package org.graylog.datanode.configuration;
 import com.github.joschi.jadconfig.Parameter;
 import org.graylog2.configuration.PathConfiguration;
 
+/**
+ * 该配置多了一个 有关异步事件总线线程数量的属性
+ */
 public class BaseConfiguration extends PathConfiguration {
     @Parameter(value = "async_eventbus_processors")
     private int asyncEventbusProcessors = 2;

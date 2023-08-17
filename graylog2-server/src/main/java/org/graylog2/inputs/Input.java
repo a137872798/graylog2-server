@@ -22,13 +22,33 @@ import org.joda.time.DateTime;
 
 import java.util.Map;
 
+/**
+ * 代表一条输入的数据
+ */
 public interface Input extends Persisted {
+
+    /**
+     * 输入数据有自己的title
+     * @return
+     */
     String getTitle();
 
+    /**
+     * 输入数据的创建时间
+     * @return
+     */
     DateTime getCreatedAt();
 
+    /**
+     * 返回一些配置项信息
+     * @return
+     */
     Map<String, Object> getConfiguration();
 
+    /**
+     * 返回静态字段
+     * @return
+     */
     Map<String, String> getStaticFields();
 
     String getType();

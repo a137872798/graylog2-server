@@ -22,6 +22,9 @@ import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/**
+ * 字节流是一段一段解析的  该对象存放解析后的消息
+ */
 public interface CodecAggregator {
 
     @Nonnull

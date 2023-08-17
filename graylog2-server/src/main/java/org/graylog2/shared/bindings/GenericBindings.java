@@ -58,6 +58,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 
 public class GenericBindings extends Graylog2Module {
+
+    /**
+     * 表示本次执行的是否是迁移命令
+     */
     private final boolean isMigrationCommand;
 
     public GenericBindings(boolean isMigrationCommand) {
@@ -66,8 +70,10 @@ public class GenericBindings extends Graylog2Module {
 
     @Override
     protected void configure() {
+        // 测量相关的先忽略
         bind(LocalMetricRegistry.class).in(Scopes.NO_SCOPE); // must not be a singleton!
 
+        // 在这里引入别的module
         install(new FactoryModuleBuilder().build(DecodingProcessor.Factory.class));
 
         bind(ProcessBuffer.class).asEagerSingleton();

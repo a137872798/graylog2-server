@@ -35,8 +35,13 @@ public class FreshInstallDetectionModule implements Module {
         this.isFreshInstall = isFreshInstall;
     }
 
+    /**
+     * 在guice中会触发该方法 完成某些属性的注入
+     * @param binder
+     */
     @Override
     public void configure(Binder binder) {
+        // 携带@Named("isFreshInstallation") 的boolean属性 会使用isFreshInstall
         binder.bind(Boolean.class).annotatedWith(Names.named(IS_FRESH_INSTALLATION)).toInstance(isFreshInstall);
     }
 }

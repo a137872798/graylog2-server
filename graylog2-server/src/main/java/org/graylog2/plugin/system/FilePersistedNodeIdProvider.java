@@ -34,11 +34,18 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.List;
 
+/**
+ * 通过该对象来产生节点ID
+ */
 @Singleton
 public class FilePersistedNodeIdProvider implements Provider<NodeId> {
     private static final Logger LOG = LoggerFactory.getLogger(FilePersistedNodeIdProvider.class);
     private final String filename;
 
+    /**
+     * 会提前注入存储id信息的文件名
+     * @param filename
+     */
     @Inject
     public FilePersistedNodeIdProvider(@Named("node_id_file") final String filename) {
         this.filename = filename;
@@ -49,6 +56,11 @@ public class FilePersistedNodeIdProvider implements Provider<NodeId> {
         return new SimpleNodeId(readOrGenerate(filename));
     }
 
+    /**
+     * 尝试从已存在的文件加载 或者重新生成
+     * @param filename
+     * @return
+     */
     private String readOrGenerate(String filename) {
         try {
             String read = read(filename);
@@ -75,6 +87,7 @@ public class FilePersistedNodeIdProvider implements Provider<NodeId> {
     }
 
     private String generate(String filename) throws NodeIdPersistenceException {
+        // 通过UUID生成随机数
         String generated = Tools.generateServerId();
         LOG.info("No node ID file found. Generated: {}", generated);
 

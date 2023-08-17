@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * This should be an interface. But we need to persist the backwards compatibility with all 5.x releases and keep it a class
  * Please change to an interface for the 6.0 release.
+ * 用于唯一标识一个节点
  */
 public abstract class NodeId {
 

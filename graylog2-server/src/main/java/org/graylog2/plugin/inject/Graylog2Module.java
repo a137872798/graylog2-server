@@ -65,16 +65,26 @@ import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.ext.ExceptionMapper;
 import java.lang.annotation.Annotation;
 
+/**
+ * 该对象提供了很多注入特定类型实例的方法  这些方法是给子类调用的
+ */
 public abstract class Graylog2Module extends AbstractModule {
     private static final Logger LOG = LoggerFactory.getLogger(Graylog2Module.class);
 
     public static final String SYSTEM_REST_RESOURCES = "systemRestResources";
 
+    /**
+     * 绑定一个新的传输层
+     * @param mapBinder
+     * @param name
+     * @param transportClass  待追加的传输层
+     */
     protected void installTransport(
             MapBinder<String, Transport.Factory<? extends Transport>> mapBinder,
             String name,
             Class<? extends Transport> transportClass) {
 
+        // 也就是说每个需要注入的传输层Bean 应当有一个携带@ConfigClass的注解类  和一个携带@FactoryClass注解的工厂类
         final Class<? extends Transport.Config> configClass =
                 (Class<? extends Transport.Config>)
                         findInnerClassAnnotatedWith(ConfigClass.class, transportClass, Transport.Config.class);
@@ -96,24 +106,34 @@ public abstract class Graylog2Module extends AbstractModule {
         installTransport(mapBinder, name, transportClass, configClass, factoryClass);
     }
 
+    // 进行注入
     protected void installTransport(
             MapBinder<String, Transport.Factory<? extends Transport>> mapBinder,
             String name,
             Class<? extends Transport> transportClass,
             Class<? extends Transport.Config> configClass,
             Class<? extends Transport.Factory<? extends Transport>> factoryClass) {
+
+        // 产生一个标识key
         final Key<? extends Transport.Factory<? extends Transport>> factoryKey = Key.get(factoryClass);
         install(new FactoryModuleBuilder()
                 .implement(Transport.class, transportClass)
                 .implement(Transport.Config.class, configClass)
+                // 标注构建对象时调用的方法
                 .build(factoryClass));
 
         mapBinder.addBinding(name).to(factoryKey);
     }
 
+    /**
+     * 注册解码类
+     * @param mapBinder
+     * @param codecClass
+     */
     protected void installCodec(MapBinder<String, Codec.Factory<? extends Codec>> mapBinder, Class<? extends Codec> codecClass) {
         if (codecClass.isAnnotationPresent(org.graylog2.plugin.inputs.annotations.Codec.class)) {
             final org.graylog2.plugin.inputs.annotations.Codec a = codecClass.getAnnotation(org.graylog2.plugin.inputs.annotations.Codec.class);
+            // 抽取注解上的信息进行安装
             installCodec(mapBinder, a.name(), codecClass);
         } else {
             LOG.error("Codec {} not annotated with {}. Cannot determine its id. This is a bug, please use that annotation, this codec will not be available",
@@ -121,11 +141,18 @@ public abstract class Graylog2Module extends AbstractModule {
         }
     }
 
+    /**
+     * 安装解码器
+     * @param mapBinder
+     * @param name          解码器名字
+     * @param codecClass
+     */
     protected void installCodec(
             MapBinder<String, Codec.Factory<? extends Codec>> mapBinder,
             String name,
             Class<? extends Codec> codecClass) {
 
+        // 同样是抽取配置类和工厂类
         final Class<? extends Codec.Config> configClass =
                 (Class<? extends Codec.Config>)
                         findInnerClassAnnotatedWith(ConfigClass.class, codecClass, Codec.Config.class);
@@ -164,6 +191,13 @@ public abstract class Graylog2Module extends AbstractModule {
         mapBinder.addBinding(name).to(factoryKey);
     }
 
+    /**
+     *
+     * @param annotationClass  期望检索的注解类
+     * @param containingClass  传输层类 但是实际要注入的是携带注解的类
+     * @param targetClass      期望检索的类
+     * @return
+     */
     @Nullable
     protected Class<?> findInnerClassAnnotatedWith(Class<? extends Annotation> annotationClass,
                                                    Class<?> containingClass,
@@ -188,6 +222,9 @@ public abstract class Graylog2Module extends AbstractModule {
         }
         return annotatedClass;
     }
+
+
+    // 返回各种需要绑定的类型
 
     protected MapBinder<String, Codec.Factory<? extends Codec>> codecMapBinder() {
         return MapBinder.newMapBinder(binder(),
@@ -225,6 +262,8 @@ public abstract class Graylog2Module extends AbstractModule {
     protected void installRetentionStrategy(MapBinder<String, RetentionStrategy> mapBinder, Class<? extends RetentionStrategy> target) {
         mapBinder.addBinding(target.getCanonicalName()).to(target);
     }
+
+    // 下面是有关输入和输出的注入
 
     protected <T extends MessageInput> void installInput(MapBinder<String, MessageInput.Factory<? extends MessageInput>> inputMapBinder,
                                                          Class<T> target,
@@ -492,11 +531,16 @@ public abstract class Graylog2Module extends AbstractModule {
      * addition of the path prefix.
      *
      * @param restResourceClass the resource to add
+     *                          追加Rest资源
      */
     protected void addSystemRestResource(Class<?> restResourceClass) {
         systemRestResourceBinder().addBinding().toInstance(restResourceClass);
     }
 
+    /**
+     * 生成一个 Named为SYSTEM_REST_RESOURCES的资源绑定器 并且可以绑定一组资源
+     * @return
+     */
     private Multibinder<Class<?>> systemRestResourceBinder() {
         return Multibinder.newSetBinder(
                 binder(),

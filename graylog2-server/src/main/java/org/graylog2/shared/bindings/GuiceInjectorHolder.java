@@ -29,6 +29,11 @@ public final class GuiceInjectorHolder {
     private GuiceInjectorHolder() {
     }
 
+    /**
+     * 外部可以通过该方法触发一组module
+     * @param bindingsModules
+     * @return
+     */
     public static Injector createInjector(final List<Module> bindingsModules) {
         if (injector == null) {
             injector = Guice.createInjector(Stage.PRODUCTION, bindingsModules);

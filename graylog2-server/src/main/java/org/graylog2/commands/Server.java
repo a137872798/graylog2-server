@@ -118,6 +118,10 @@ import static org.graylog2.plugin.ServerStatus.Capability.CLOUD;
 import static org.graylog2.plugin.ServerStatus.Capability.MASTER;
 import static org.graylog2.plugin.ServerStatus.Capability.SERVER;
 
+/**
+ * graylog 核心类
+ * @Command 注解会使得在输入包含server的命令行时 启动Server(触发run方法)
+ */
 @Command(name = "server", description = "Start the Graylog server")
 public class Server extends ServerBootstrap {
     protected static final Configuration configuration = new Configuration();
@@ -140,6 +144,9 @@ public class Server extends ServerBootstrap {
     private final TelemetryConfiguration telemetryConfiguration = new TelemetryConfiguration();
     private final DnsLookupAdapterConfiguration dnsLookupAdapterConfiguration = new DnsLookupAdapterConfiguration();
 
+    /**
+     * 命令行参数  server -l 代表在使用本地模式启动
+     */
     @Option(name = {"-l", "--local"}, description = "Run Graylog in local mode. Only interesting for Graylog developers.")
     private boolean local = false;
 

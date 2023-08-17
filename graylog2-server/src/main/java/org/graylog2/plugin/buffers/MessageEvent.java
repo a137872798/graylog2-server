@@ -27,9 +27,13 @@ import java.util.Collection;
 
 /**
  * @author Lennart Koopmann <lennart@torch.sh>
+ *     会被放入到对象池中的bean对象
  */
 public class MessageEvent {
 
+    /**
+     * 用于生成新实例的方法
+     */
     public final static EventFactory<MessageEvent> EVENT_FACTORY = new EventFactory<MessageEvent>() {
         @Override
         public MessageEvent newInstance()
@@ -38,7 +42,10 @@ public class MessageEvent {
         }
     };
 
+    // TODO
     private RawMessage raw;
+
+    // 事件可能包含一条消息 也可能是多条
     private Message msg;
     private Collection<Message> messages;
 
@@ -66,6 +73,9 @@ public class MessageEvent {
         this.messages = messages;
     }
 
+    /**
+     * 清除内部的消息
+     */
     public void clearMessages() {
         setMessage(null);
         setMessages(null);

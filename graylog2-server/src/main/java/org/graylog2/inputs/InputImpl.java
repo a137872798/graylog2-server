@@ -43,6 +43,9 @@ import java.util.Map;
 import static com.google.common.base.Strings.emptyToNull;
 import static org.graylog2.shared.security.RestPermissions.INPUTS_READ;
 
+/**
+ * 代表一个数据体
+ */
 @DbEntity(collection = "inputs",
           readPermission = INPUTS_READ)
 public class InputImpl extends PersistedImpl implements Input {
@@ -63,6 +66,10 @@ public class InputImpl extends PersistedImpl implements Input {
         super(id, fields);
     }
 
+    /**
+     * 返回所有字段校验器
+     * @return
+     */
     @Override
     public Map<String, Validator> getValidations() {
         final ImmutableMap.Builder<String, Validator> validations = ImmutableMap.builder();
@@ -77,6 +84,11 @@ public class InputImpl extends PersistedImpl implements Input {
         return validations.build();
     }
 
+    /**
+     * 获取某个key 内嵌的校验器
+     * @param key
+     * @return
+     */
     @Override
     public Map<String, Validator> getEmbeddedValidations(String key) {
         if (EMBEDDED_EXTRACTORS.equals(key)) {
@@ -101,6 +113,8 @@ public class InputImpl extends PersistedImpl implements Input {
         return Collections.emptyMap();
     }
 
+    // 从map中返回对应的字段
+
     @Override
     public String getTitle() {
         return (String) fields.get(MessageInput.FIELD_TITLE);
@@ -117,16 +131,23 @@ public class InputImpl extends PersistedImpl implements Input {
         return (Map<String, Object>) fields.get(MessageInput.FIELD_CONFIGURATION);
     }
 
+    /**
+     * 获取静态字段
+     * @return
+     */
     @Override
     public Map<String, String> getStaticFields() {
+        // 不存在静态字段 返回空
         if (fields.get(EMBEDDED_STATIC_FIELDS) == null) {
             return Collections.emptyMap();
         }
 
+        // 获取静态字段
         final BasicDBList list = (BasicDBList) fields.get(EMBEDDED_STATIC_FIELDS);
         final Map<String, String> staticFields = Maps.newHashMapWithExpectedSize(list.size());
         for (final Object element : list) {
             try {
+                // 解析mongodb对象
                 final DBObject field = (DBObject) element;
                 staticFields.put((String) field.get(FIELD_STATIC_FIELD_KEY), (String) field.get(FIELD_STATIC_FIELD_VALUE));
             } catch (Exception e) {

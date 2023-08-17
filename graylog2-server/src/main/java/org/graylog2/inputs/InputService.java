@@ -30,9 +30,22 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * PersistedService 开放了一些存储和查询的api 这里进一步提供create/update
+ */
 public interface InputService extends PersistedService {
+
+    /**
+     * 返回所有input
+     * @return
+     */
     List<Input> all();
 
+    /**
+     * 返回某个节点关联的所有input
+     * @param nodeId
+     * @return
+     */
     List<Input> allOfThisNode(String nodeId);
 
     Input create(String id, Map<String, Object> fields);
@@ -41,21 +54,51 @@ public interface InputService extends PersistedService {
 
     <T extends Persisted> String saveWithoutEvents(T model) throws ValidationException;
 
+    /**
+     * 更新某个model
+     * @param model
+     * @return
+     * @throws ValidationException
+     */
     String update(Input model) throws ValidationException;
 
+    /**
+     * 从持久层检索某个model
+     * @param id
+     * @return
+     * @throws NotFoundException
+     */
     Input find(String id) throws NotFoundException;
 
+    /**
+     * 通过type匹配input
+     * @param type
+     * @return
+     */
     default List<Input> allByType(String type) {
         return all().stream().filter(input -> Objects.equals(input.getType(), type)).toList();
     }
 
+    /**
+     * 通过id匹配input
+     * @param ids
+     * @return
+     */
     Set<Input> findByIds(Collection<String> ids);
 
     Input findForThisNode(String nodeId, String id) throws NotFoundException;
 
+    /**
+     * 从某个节点 或者全局查找
+     * @param nodeId
+     * @param id
+     * @return
+     * @throws NotFoundException
+     */
     Input findForThisNodeOrGlobal(String nodeId, String id) throws NotFoundException;
 
     /**
+     * 返回集群中的总量
      * @return the total number of inputs in the cluster (including global inputs).
      */
     long totalCount();

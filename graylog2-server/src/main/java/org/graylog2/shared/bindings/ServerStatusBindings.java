@@ -23,6 +23,9 @@ import org.graylog2.plugin.ServerStatus;
 
 import java.util.Set;
 
+/**
+ * 该对象描述了如何将 ServerStatus 注入到guice
+ */
 public class ServerStatusBindings extends AbstractModule {
 
     private final Set<ServerStatus.Capability> capabilities;
@@ -33,11 +36,14 @@ public class ServerStatusBindings extends AbstractModule {
 
     @Override
     protected void configure() {
+
+        // 在选择注入ServerStatus.Capability时 可能会包含多个值
         Multibinder<ServerStatus.Capability> capabilityBinder = Multibinder.newSetBinder(binder(), ServerStatus.Capability.class);
         for(ServerStatus.Capability capability : capabilities) {
             capabilityBinder.addBinding().toInstance(capability);
         }
 
+        // 标注 ServerStatus采用单例模式
         bind(ServerStatus.class).in(Scopes.SINGLETON);
     }
 }

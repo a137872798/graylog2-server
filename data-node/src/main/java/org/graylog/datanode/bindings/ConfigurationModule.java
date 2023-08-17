@@ -22,6 +22,9 @@ import org.graylog.datanode.Configuration;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * graylog server 通过guice进行bean注入和管理
+ */
 public class ConfigurationModule implements Module {
     private final Configuration configuration;
 

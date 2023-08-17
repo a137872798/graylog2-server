@@ -35,11 +35,24 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * 表示一个被持久化的对象   只是一个基类
+ */
 public abstract class PersistedImpl implements Persisted {
     private static final Logger LOG = LoggerFactory.getLogger(PersistedImpl.class);
 
+    /**
+     * 该对象包含的字段  以及唯一id
+     */
     protected final Map<String, Object> fields;
+    /**
+     * 借助mongodb包的能力 生成唯一id
+     */
     protected final ObjectId id;
+
+    /**
+     * 以16进制的方式存储id
+     */
     private final AtomicReference<String> hexId = new AtomicReference<>(null);
 
     protected PersistedImpl(@Nullable final Map<String, Object> fields) {
@@ -75,6 +88,10 @@ public abstract class PersistedImpl implements Persisted {
         return this.id;
     }
 
+    /**
+     * 总是返回16进制的形式
+     * @return
+     */
     @Override
     public String getId() {
         // Performance - toHexString is expensive so we cache it.
@@ -94,6 +111,7 @@ public abstract class PersistedImpl implements Persisted {
         return fields;
     }
 
+    // 同时比较id 和 field
     @Override
     public boolean equals(final Object o) {
         if (!(o instanceof PersistedImpl)) {
@@ -117,13 +135,20 @@ public abstract class PersistedImpl implements Persisted {
                 '}';
     }
 
+    /**
+     * 将内部字段返回
+     * @return
+     */
     @Override
     public Map<String, Object> asMap() {
         final Map<String, Object> result = new HashMap<>();
+
+        // 优先使用getXXX方法获取field
         for (Method method : this.getClass().getMethods()) {
             if (method.getName().startsWith("get") && method.getParameterTypes().length == 0) {
                 final String fieldName = method.getName().substring(3).toLowerCase(Locale.ENGLISH);
                 try {
+                    // 通过反射 调用所有 getXXX
                     result.put(fieldName, method.invoke(this));
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     LOG.debug("Error while accessing field", e);
@@ -131,6 +156,7 @@ public abstract class PersistedImpl implements Persisted {
             }
         }
 
+        // 还会读取所有field
         for (Field field : this.getClass().getFields()) {
             if (!result.containsKey(field.getName())) {
                 try {

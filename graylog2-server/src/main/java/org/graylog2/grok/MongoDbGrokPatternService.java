@@ -50,8 +50,12 @@ import java.util.stream.Collectors;
 
 import static org.graylog2.grok.GrokPatternService.ImportStrategy.ABORT_ON_CONFLICT;
 
+/**
+ * 通过mongodb实现正则表达式的持久化  该对象会注册到guice容器中
+ */
 @Singleton
 public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
+
     public static final String COLLECTION_NAME = "grok_patterns";
     public static final String INDEX_NAME = "idx_name_asc_unique";
 
@@ -59,6 +63,10 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
     public static final int MAX_DISPLAYED_CONFLICTS = 10;
 
     private final JacksonDBCollection<GrokPattern, ObjectId> dbCollection;
+
+    /**
+     * 该对象由ClusterEventBusProvider 提供创建逻辑
+     */
     private final ClusterEventBus clusterBus;
 
     @Inject
@@ -67,15 +75,22 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
                                         ClusterEventBus clusterBus) {
 
         this.dbCollection = JacksonDBCollection.wrap(
+                // 定位到集合
                 mongoConnection.getDatabase().getCollection(COLLECTION_NAME),
+                // 描述value的类型 以及id的类型
                 GrokPattern.class,
                 ObjectId.class,
                 mapper.get());
         this.clusterBus = clusterBus;
 
+        // 为该集合创建索引
         createIndex(mongoConnection);
     }
 
+    /**
+     * 为集合创建索引
+     * @param mongoConnection
+     */
     private static void createIndex(MongoConnection mongoConnection) {
         final IndexOptions indexOptions = new IndexOptions()
                 .name(INDEX_NAME)
@@ -113,6 +128,12 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
         }
     }
 
+    /**
+     * 将正则对象存入到mongodb中
+     * @param pattern
+     * @return
+     * @throws ValidationException
+     */
     @Override
     public GrokPattern save(GrokPattern pattern) throws ValidationException {
         try {
@@ -123,6 +144,7 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
             throw new ValidationException("Invalid pattern " + pattern + "\n" + e.getMessage());
         }
 
+        // 已存在
         if (loadByName(pattern.name()).isPresent()) {
             throw new ValidationException("Grok pattern " + pattern.name() + " already exists");
         }
@@ -130,11 +152,18 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
         final WriteResult<GrokPattern, ObjectId> result = dbCollection.save(pattern);
         final GrokPattern savedGrokPattern = result.getSavedObject();
 
+        // 产生一个正则更新事件
         clusterBus.post(GrokPatternsUpdatedEvent.create(ImmutableSet.of(savedGrokPattern.name())));
 
         return savedGrokPattern;
     }
 
+    /**
+     * 更新某个正则对象
+     * @param pattern
+     * @return
+     * @throws ValidationException
+     */
     @Override
     public GrokPattern update(GrokPattern pattern) throws ValidationException {
         try {

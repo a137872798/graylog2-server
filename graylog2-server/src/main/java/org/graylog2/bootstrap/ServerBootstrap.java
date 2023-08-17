@@ -386,6 +386,10 @@ public abstract class ServerBootstrap extends CmdLineTool {
         }
     }
 
+    /**
+     * 服务器有自己需要注入的模块
+     * @return
+     */
     @Override
     protected List<Module> getSharedBindingsModules() {
         final List<Module> result = super.getSharedBindingsModules();

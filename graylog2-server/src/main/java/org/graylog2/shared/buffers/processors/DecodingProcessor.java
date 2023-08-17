@@ -50,6 +50,10 @@ import java.util.concurrent.TimeUnit;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * EventHandler 是 disruptor 的事件处理器 相当于对象池+线程池
+ * 简单来讲该对象就是接收event 解码原始消息 并将解码后的结果设置到event中
+ */
 public class DecodingProcessor implements EventHandler<MessageEvent> {
     private static final Logger LOG = LoggerFactory.getLogger(DecodingProcessor.class);
 
@@ -60,13 +64,27 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
         DecodingProcessor create(@Assisted("decodeTime") Timer decodeTime, @Assisted("parseTime") Timer parseTime);
     }
 
+
+    // 存在多个解码器 通过key进行分组
     private final Map<String, Codec.Factory<? extends Codec>> codecFactory;
+    // 描述服务器状态
     private final ServerStatus serverStatus;
+    // TODO
     private final MetricRegistry metricRegistry;
     private final Journal journal;
     private final MessageQueueAcknowledger acknowledger;
     private final Timer parseTime;
 
+    /**
+     * 代表作为 Factory.create触发的方法
+     * @param codecFactory  包含了解码器
+     * @param serverStatus  通过该对象可以控制消息处理的启停
+     * @param metricRegistry
+     * @param journal
+     * @param acknowledger
+     * @param decodeTime
+     * @param parseTime
+     */
     @AssistedInject
     public DecodingProcessor(Map<String, Codec.Factory<? extends Codec>> codecFactory,
                              final ServerStatus serverStatus,
@@ -87,6 +105,14 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
         decodedTrafficCounter = metricRegistry.counter(GlobalMetricNames.DECODED_TRAFFIC);
     }
 
+    /**
+     * 当接收到事件时 触发该方法
+     * @param event
+     * 下面2个参数跟 RingBuffer有关
+     * @param sequence
+     * @param endOfBatch
+     * @throws Exception
+     */
     @Override
     public void onEvent(MessageEvent event, long sequence, boolean endOfBatch) throws Exception {
         final Timer.Context context = decodeTime.time();
@@ -103,6 +129,7 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
             // basically this will make sure old messages are cleared out early.
             event.clearMessages();
         } finally {
+
             if (event.getMessage() != null) {
                 event.getMessage().recordTiming(serverStatus, "decode", context.stop());
             } else if (event.getMessages() != null) {
@@ -114,10 +141,16 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
                 acknowledger.acknowledge(event.getRaw().getMessageQueueId());
             }
             // aid garbage collection to collect the raw message early (to avoid promoting it to later generations).
+            // 解析完毕后 就不需要需要raw了 帮助gc回收
             event.clearRaw();
         }
     }
 
+    /**
+     * 解析event中的原始消息
+     * @param event
+     * @throws ExecutionException
+     */
     private void processMessage(final MessageEvent event) throws ExecutionException {
         final RawMessage raw = event.getRaw();
 
@@ -126,12 +159,13 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
         // TODO fix the above
         String inputIdOnCurrentNode;
         try {
-            // .inputId checked during raw message decode!
+            // .inputId checked during raw message decode!   兼容性逻辑 只读取最后一个nodeid
             inputIdOnCurrentNode = Iterables.getLast(raw.getSourceNodes()).inputId;
         } catch (NoSuchElementException e) {
             inputIdOnCurrentNode = null;
         }
 
+        // 在原始消息中包含了使用哪种解码方式  获取对应的工厂
         final Codec.Factory<? extends Codec> factory = codecFactory.get(raw.getCodecName());
         if (factory == null) {
             LOG.warn("Couldn't find factory for codec <{}>, skipping message {} on input <{}>.",
@@ -139,7 +173,10 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
             return;
         }
 
+        // 生成解码器对象
         final Codec codec = factory.create(raw.getCodecConfig());
+
+        // 生成一个关联的测量名
         final String baseMetricName = name(codec.getClass(), inputIdOnCurrentNode);
 
         Message message = null;
@@ -163,6 +200,7 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
             decodeTime = decodeTimeCtx.stop();
         }
 
+        // 将解码后的消息设置到event中   针对每条消息都要调用postProcessMessage
         if (message != null) {
             event.setMessage(postProcessMessage(raw, codec, inputIdOnCurrentNode, baseMetricName, message, decodeTime));
         } else if (messages != null && !messages.isEmpty()) {
@@ -180,12 +218,24 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
         }
     }
 
+    /**
+     * 简单讲就是往message中追加了一些field
+     * @param raw
+     * @param codec
+     * @param inputIdOnCurrentNode
+     * @param baseMetricName
+     * @param message
+     * @param decodeTime
+     * @return
+     */
     @Nullable
     private Message postProcessMessage(RawMessage raw, Codec codec, String inputIdOnCurrentNode, String baseMetricName, Message message, long decodeTime) {
         if (message == null) {
             metricRegistry.meter(name(baseMetricName, "failures")).mark();
             return null;
         }
+
+        // 解析后发现消息不完整 缺少某些字段
         if (!message.isComplete()) {
             metricRegistry.meter(name(baseMetricName, "incomplete")).mark();
             if (LOG.isDebugEnabled()) {
@@ -195,14 +245,17 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
             return null;
         }
 
+        // TODO 设置消息的队列id  应该是跟之后的消息分发有关
         message.setMessageQueueId(raw.getMessageQueueId());
         // Some input paths set the sequenceNr through the Codec, not the RawMessage
+        // 使用同一个消息序列号 如果是多条消息  那么他们的序列号是一样的
         if (message.getSequenceNr() == 0) {
             message.setSequenceNr(raw.getSequenceNr());
         }
         message.recordTiming(serverStatus, "parse", decodeTime);
         metricRegistry.timer(name(baseMetricName, "parseTime")).update(decodeTime, TimeUnit.NANOSECONDS);
 
+        // 追加source_input/source_node 字段
         for (final RawMessage.SourceNode node : raw.getSourceNodes()) {
             switch (node.type) {
                 case SERVER:
@@ -235,6 +288,7 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
             }
         }
 
+        // 获取发送方的地址    抽取相关信息并设置到message中
         final ResolvableInetSocketAddress remoteAddress = raw.getRemoteAddress();
         if (remoteAddress != null) {
             final String addrString = InetAddresses.toAddrString(remoteAddress.getAddress());
@@ -250,6 +304,7 @@ public class DecodingProcessor implements EventHandler<MessageEvent> {
             }
         }
 
+        // 如果存在一个 override_source 那么覆盖source
         if (codec.getConfiguration() != null && codec.getConfiguration().stringIsSet(Codec.Config.CK_OVERRIDE_SOURCE)) {
             message.setSource(codec.getConfiguration().getString(Codec.Config.CK_OVERRIDE_SOURCE));
         }

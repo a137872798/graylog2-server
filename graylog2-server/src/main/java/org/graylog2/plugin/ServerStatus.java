@@ -40,6 +40,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.graylog2.audit.AuditEventTypes.MESSAGE_PROCESSING_LOCK;
 
+/**
+ * 该对象 相当于是服务器的一个开关
+ */
 @Singleton
 public class ServerStatus {
     private static final Logger LOG = LoggerFactory.getLogger(ServerStatus.class);
@@ -49,6 +52,7 @@ public class ServerStatus {
     }
 
     public enum Capability {
+        // 对外开放接口
         SERVER,
         /**
          * @deprecated Use {@link LeaderElectionService#isLeader()} to determine if the node currently acts as a leader,
@@ -56,14 +60,21 @@ public class ServerStatus {
          */
         @Deprecated
         MASTER,
+        // 仅允许本地访问?
         LOCALMODE,
+        // 在云上运行
         CLOUD
     }
 
     private final EventBus eventBus;
     private final NodeId nodeId;
+
+    /**
+     * 用于发送审计事件  目前是个空实现 (逻辑在收费版里?)
+     */
     private final Provider<AuditEventSender> auditEventSenderProvider;
     private final String clusterId;
+    // 当该对象被初始化时 代表服务启动时间
     private final DateTime startedAt;
     private final Set<Capability> capabilitySet;
     private MessageDetailRecordingStrategy messageDetailRecordingStrategy = MessageDetailRecordingStrategy.NEVER;
@@ -74,6 +85,14 @@ public class ServerStatus {
 
     private volatile Lifecycle lifecycle = Lifecycle.UNINITIALIZED;
 
+    /**
+     *
+     * @param configuration  包含各种基础配置   已经提前设置到bean容器中
+     * @param capabilities   描述能力范围
+     * @param eventBus       从guice中获取该对象 并且支持注册事件监听器
+     * @param auditEventSenderProvider
+     * @param nodeId    用于标识节点
+     */
     @Inject
     public ServerStatus(BaseConfiguration configuration, Set<Capability> capabilities, EventBus eventBus, Provider<AuditEventSender> auditEventSenderProvider, final NodeId nodeId) {
         this.eventBus = eventBus;
@@ -82,6 +101,8 @@ public class ServerStatus {
         this.clusterId = "";
         this.startedAt = Tools.nowUTC();
         this.capabilitySet = Sets.newHashSet(capabilities); // copy, because we support adding more capabilities later
+
+        // 代表是否要记录出现过的消息
         this.messageDetailRecordingStrategy = configuration.isMessageRecordingsEnabled()
                 ? MessageDetailRecordingStrategy.ALWAYS
                 : MessageDetailRecordingStrategy.NEVER;
@@ -99,6 +120,10 @@ public class ServerStatus {
         return lifecycle;
     }
 
+    /**
+     * 当服务的生命周期发生变化时  推送一个事件到事件总线
+     * @param lifecycle
+     */
     private void publishLifecycle(final Lifecycle lifecycle) {
         setLifecycle(lifecycle);
         eventBus.post(lifecycle);
@@ -135,6 +160,8 @@ public class ServerStatus {
         isProcessing.set(false);
         publishLifecycle(Lifecycle.FAILED);
     }
+
+    // 切换到不同的状态 需要发布对应的事件
 
     public void throttle() {
         publishLifecycle(Lifecycle.THROTTLED);
@@ -180,6 +207,7 @@ public class ServerStatus {
      * Blocks until the server enters the RUNNING state.
      * @throws InterruptedException if the thread is interrupted while waiting for the server to enter the RUNNING
      * state.
+     * 阻塞直到 进入Running状态
      */
     public void awaitRunning() throws InterruptedException {
         runningLatch.await();

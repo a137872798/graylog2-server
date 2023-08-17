@@ -32,19 +32,32 @@ import java.util.concurrent.ThreadFactory;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 该对象描述了如何产生 EventBus
+ */
 public class EventBusProvider implements Provider<EventBus> {
     private final int asyncEventbusProcessors;
     private final MetricRegistry metricRegistry;
 
+    /**
+     *
+     * @param asyncEventbusProcessors 该属性会提前注册到guice内
+     * @param metricRegistry
+     */
     @Inject
     public EventBusProvider(final @Named("async_eventbus_processors") int asyncEventbusProcessors, final MetricRegistry metricRegistry) {
         this.asyncEventbusProcessors = asyncEventbusProcessors;
         this.metricRegistry = metricRegistry;
     }
 
+    /**
+     * 通过该方法产生实例
+     * @return
+     */
     @Override
     public EventBus get() {
         final EventBus eventBus = new AsyncEventBus("graylog-eventbus", executorService(asyncEventbusProcessors));
+        // 为bus设置处理逻辑
         eventBus.register(new DeadEventLoggingListener());
 
         return eventBus;

@@ -25,6 +25,9 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.SortedSet;
 
+/**
+ * 记录了各种存储路径
+ */
 public class PathConfiguration {
     public static final String ALLOWED_AUXILIARY_PATHS = "allowed_auxiliary_paths";
 

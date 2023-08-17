@@ -27,7 +27,12 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 抽取器工厂  应该就是通过该对象来完成各种映射逻辑的
+ */
 public class ExtractorFactory {
+
+    // 测量相关的先忽略
     private final MetricRegistry metricRegistry;
     private final GrokPatternRegistry grokPatternRegistry;
     private final LookupTableService lookupTableService;

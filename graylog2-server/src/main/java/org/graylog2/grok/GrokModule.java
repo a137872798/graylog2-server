@@ -18,6 +18,9 @@ package org.graylog2.grok;
 
 import com.google.inject.AbstractModule;
 
+/**
+ * 使用该对象来注入负责使用正则表达式的对象
+ */
 public class GrokModule extends AbstractModule {
     @Override
     protected void configure() {

@@ -22,6 +22,7 @@ package org.graylog2.plugin.system;
  * is most likely not an issue, as typical use case is to let the server inject the NodeId instance.
  *
  * @param nodeId This is the actual ID. It's expected to be in the UID format, but it's not enforced anyhow now.
+ *               通过一个 String 标记节点
  */
 public class SimpleNodeId extends NodeId {
 

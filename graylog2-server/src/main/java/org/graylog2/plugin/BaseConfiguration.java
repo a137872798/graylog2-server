@@ -41,6 +41,10 @@ import java.net.URI;
 import static org.graylog2.shared.messageq.MessageQueueModule.DISK_JOURNAL_MODE;
 import static org.graylog2.shared.messageq.MessageQueueModule.NOOP_JOURNAL_MODE;
 
+/**
+ * PathConfiguration 仅指定了3种数据的目录
+ * 该对象也是包含各种配置信息
+ */
 @SuppressWarnings("FieldMayBeFinal")
 public abstract class BaseConfiguration extends PathConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(BaseConfiguration.class);
@@ -148,7 +152,7 @@ public abstract class BaseConfiguration extends PathConfiguration {
     public int getAsyncEventbusProcessors() {
         return asyncEventbusProcessors;
     }
-    
+
     public boolean isMessageJournalEnabled() {
         return messageJournalEnabled;
     }

@@ -26,6 +26,9 @@ import org.mongojack.ObjectId;
 
 import javax.annotation.Nullable;
 
+/**
+ * 实际上就是一个简单的bean对象
+ */
 @AutoValue
 @WithBeanGetter
 @JsonAutoDetect

@@ -75,10 +75,16 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * graylog开放的http端点
+ * 只需要实现AbstractIdleService的startUp和 shutDown即可
+ * 具体查看提供了哪些资源能力 还是要查找Module的注入逻辑
+ */
 public class JerseyService extends AbstractIdleService {
     private static final Logger LOG = LoggerFactory.getLogger(JerseyService.class);
     private static final String RESOURCE_PACKAGE_WEB = "org.graylog2.web.resources";
 
+    // 包含graylog需要的各种配置
     private final Configuration configuration;
     private final Set<Class<?>> systemRestResources;
 
@@ -86,14 +92,20 @@ public class JerseyService extends AbstractIdleService {
     private final Set<Class<? extends ExceptionMapper>> exceptionMappers;
     private final ObjectMapper objectMapper;
     private final MetricRegistry metricRegistry;
+
+    // TLS 先忽略
     private final TLSProtocolsConfiguration tlsConfiguration;
 
+    /**
+     * 通过该对象提供http端点
+     */
     private HttpServer apiHttpServer = null;
 
     @Inject
     public JerseyService(final Configuration configuration,
                          Set<Class<? extends DynamicFeature>> dynamicFeatures,
                          Set<Class<? extends ExceptionMapper>> exceptionMappers,
+                         // 获得提供Rest服务的所有资源
                          @Named(Graylog2Module.SYSTEM_REST_RESOURCES) final Set<Class<?>> systemRestResources,
                          ObjectMapper objectMapper,
                          MetricRegistry metricRegistry,
@@ -105,9 +117,15 @@ public class JerseyService extends AbstractIdleService {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper");
         this.metricRegistry = requireNonNull(metricRegistry, "metricRegistry");
         this.tlsConfiguration = requireNonNull(tlsConfiguration);
+        // 本对象也监听 EventBus中的事件
         eventBus.register(this);
     }
 
+    /**
+     * 监听 OpenSearcher 配置项改变的事件
+     * @param event
+     * @throws Exception
+     */
     @Subscribe
     public synchronized void handleOpensearchConfigurationChange(OpensearchConfigurationChangeEvent event) throws Exception {
         LOG.info("Opensearch config changed, restarting jersey service to apply security changes");
@@ -129,6 +147,9 @@ public class JerseyService extends AbstractIdleService {
 
     }
 
+    /**
+     * 可以通过监听到配置项变更事件自动启动 不需要手动启动
+     */
     @Override
     protected void startUp() {
         // do nothing, the actual startup will be triggered at the moment opensearch configuration is available
@@ -146,6 +167,11 @@ public class JerseyService extends AbstractIdleService {
         shutdownHttpServer(apiHttpServer, configuration.getHttpBindAddress());
     }
 
+    /**
+     * 终止http服务
+     * @param httpServer
+     * @param bindAddress
+     */
     private void shutdownHttpServer(HttpServer httpServer, HostAndPort bindAddress) {
         if (httpServer != null && httpServer.isStarted()) {
             LOG.info("Shutting down HTTP listener at <{}>", bindAddress);
@@ -153,7 +179,14 @@ public class JerseyService extends AbstractIdleService {
         }
     }
 
+    /**
+     * 启动http服务
+     * @param sslEngineConfigurator
+     * @throws Exception
+     */
     private void startUpApi(SSLEngineConfigurator sslEngineConfigurator) throws Exception {
+
+        // 获取http服务器绑定的ip 以及 contextPath
         final HostAndPort bindAddress = configuration.getHttpBindAddress();
         final String contextPath = configuration.getHttpPublishUri().getPath();
         final URI listenUri = new URI(
@@ -166,6 +199,7 @@ public class JerseyService extends AbstractIdleService {
                 null
         );
 
+        // 根据传入的一些http服务器配置项 进行初始化
         apiHttpServer = setUp(
                 listenUri,
                 sslEngineConfigurator,
@@ -180,11 +214,17 @@ public class JerseyService extends AbstractIdleService {
         LOG.info("Started REST API at <{}>", configuration.getHttpBindAddress());
     }
 
+    /**
+     * 填充端点配置
+     * @param additionalResources
+     * @return
+     */
     private ResourceConfig buildResourceConfig(final Set<Resource> additionalResources) {
         final ResourceConfig rc = new ResourceConfig()
                 .property(ServerProperties.BV_SEND_ERROR_IN_RESPONSE, true)
                 .property(ServerProperties.WADL_FEATURE_DISABLE, true)
                 .property(ServerProperties.MEDIA_TYPE_MAPPINGS, mediaTypeMappings())
+                // 注册json解析相关的
                 .registerClasses(
                         JacksonJaxbJsonProvider.class,
                         JsonProcessingExceptionMapper.class,
@@ -198,7 +238,9 @@ public class JerseyService extends AbstractIdleService {
                     }
                 })
                 .register(MultiPartFeature.class)
+                // 注册Rest资源对象
                 .registerClasses(systemRestResources)
+                // 注册额外的资源
                 .registerResources(additionalResources);
 
         exceptionMappers.forEach(rc::registerClasses);
@@ -216,6 +258,17 @@ public class JerseyService extends AbstractIdleService {
         );
     }
 
+    /**
+     * 启动http服务器
+     * @param listenUri
+     * @param sslEngineConfigurator
+     * @param threadPoolSize
+     * @param selectorRunnersCount
+     * @param maxHeaderSize
+     * @param enableGzip
+     * @param additionalResources
+     * @return
+     */
     private HttpServer setUp(URI listenUri,
                              SSLEngineConfigurator sslEngineConfigurator,
                              int threadPoolSize,
@@ -223,6 +276,8 @@ public class JerseyService extends AbstractIdleService {
                              int maxHeaderSize,
                              boolean enableGzip,
                              Set<Resource> additionalResources) {
+
+        // 将各个类注册到 ResourceConfig中
         final ResourceConfig resourceConfig = buildResourceConfig(additionalResources);
         final HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(
                 listenUri,

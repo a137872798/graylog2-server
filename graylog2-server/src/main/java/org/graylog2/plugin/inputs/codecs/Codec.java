@@ -25,10 +25,17 @@ import org.graylog2.plugin.journal.RawMessage;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/**
+ * 该对象可以将原始消息解码成普通消息
+ */
 public interface Codec {
     @Nullable
     Message decode(@Nonnull RawMessage rawMessage);
 
+    /**
+     * 使用该对象拼接解析出的数据
+     * @return
+     */
     @Nullable
     CodecAggregator getAggregator();
 
@@ -37,6 +44,10 @@ public interface Codec {
     @Nonnull
     Configuration getConfiguration();
 
+    /**
+     * 基于配置对象 可以产生解码器
+     * @param <C>
+     */
     interface Factory<C> {
         C create(Configuration configuration);
         Config getConfig();

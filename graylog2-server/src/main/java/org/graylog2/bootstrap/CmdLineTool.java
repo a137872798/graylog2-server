@@ -115,6 +115,8 @@ public abstract class CmdLineTool implements CliCommand {
     protected final Configuration configuration;
     protected final ChainingClassLoader chainingClassLoader;
 
+    // 通过在命令行后面追加这些选项 会为这些属性赋值
+
     @Option(name = "--dump-config", description = "Show the effective Graylog configuration and exit")
     protected boolean dumpConfig = false;
 
@@ -302,6 +304,7 @@ public abstract class CmdLineTool implements CliCommand {
 
         beforeInjectorCreation(plugins);
 
+        // 将需要的各个组件填充到注入器
         injector = setupInjector(
                 new IsDevelopmentBindings(),
                 new NamedConfigParametersModule(jadConfig.getConfigurationBeans()),
@@ -499,6 +502,11 @@ public abstract class CmdLineTool implements CliCommand {
         return Lists.newArrayList();
     }
 
+    /**
+     * 触发module的方法 将对象填充到注入器中
+     * @param modules
+     * @return
+     */
     protected Injector setupInjector(Module... modules) {
         try {
             final ImmutableList.Builder<Module> builder = ImmutableList.builder();

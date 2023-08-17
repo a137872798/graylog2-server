@@ -29,11 +29,16 @@ import javax.inject.Named;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * 对应为接入层提供的能力
+ */
 public class TransportsModule extends Graylog2Module {
+
     @Override
     protected void configure() {
         final MapBinder<String, Transport.Factory<? extends Transport>> mapBinder = transportMapBinder();
 
+        // 支持的所有数据接入层 包括 randomhttp (随机产生数据并进入graylog)
         installTransport(mapBinder, "udp", UdpTransport.class);
         installTransport(mapBinder, "tcp", TcpTransport.class);
         installTransport(mapBinder, "http", HttpTransport.class);

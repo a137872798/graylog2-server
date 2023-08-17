@@ -41,10 +41,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.cache.CacheLoader.asyncReloading;
 
+/**
+ * 该对象负责同步本地缓存与mongodb中存储的正则表达式
+ */
 @Singleton
 public class GrokPatternRegistry {
     private static final Logger log = LoggerFactory.getLogger(GrokPatternRegistry.class);
 
+    /**
+     * 通过该对象可以进行正则的crud
+     */
     private final GrokPatternService grokPatternService;
 
     private final AtomicReference<Set<GrokPattern>> patterns = new AtomicReference<>(Collections.emptySet());

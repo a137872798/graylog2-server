@@ -20,6 +20,9 @@ import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 
+/**
+ * 通过该对象与mongodb交互
+ */
 public interface MongoConnection {
     MongoClient connect();
 

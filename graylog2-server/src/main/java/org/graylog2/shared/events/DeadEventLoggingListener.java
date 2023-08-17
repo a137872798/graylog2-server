@@ -21,6 +21,9 @@ import com.google.common.eventbus.Subscribe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 监听到事件后 通过该对象处理
+ */
 public class DeadEventLoggingListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(DeadEventLoggingListener.class);
 

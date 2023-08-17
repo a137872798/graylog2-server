@@ -40,8 +40,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 通过与mongodb交互 实现上层开放的各方法
+ */
 public class PersistedServiceImpl implements PersistedService {
     private static final Logger LOG = LoggerFactory.getLogger(PersistedServiceImpl.class);
+
+    /**
+     * 通过该对象与mongodb交互
+     */
     public final MongoConnection mongoConnection;
 
     protected PersistedServiceImpl(MongoConnection mongoConnection) {
