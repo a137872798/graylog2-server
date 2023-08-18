@@ -22,6 +22,9 @@ import org.graylog2.filters.ExtractorFilter;
 import org.graylog2.filters.StaticFieldFilter;
 import org.graylog2.plugin.filters.MessageFilter;
 
+/**
+ * 该对象用于配置消息过滤器
+ */
 public class MessageFilterBindings extends AbstractModule {
     @Override
     protected void configure() {

@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 抽取器工厂  应该就是通过该对象来完成各种映射逻辑的
+ * 抽取器工厂
  */
 public class ExtractorFactory {
 

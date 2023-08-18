@@ -38,9 +38,13 @@ import org.graylog2.inputs.transports.TransportsModule;
 import org.graylog2.plugin.inject.Graylog2Module;
 import org.graylog2.plugin.inputs.MessageInput;
 
+/**
+ * 在这里配置所有支持的输入方式
+ */
 public class MessageInputBindings extends Graylog2Module {
     @Override
     protected void configure() {
+        // 在这里会间接触发其他module的安装
         install(new TransportsModule());
         install(new CodecsModule());
 

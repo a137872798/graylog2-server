@@ -18,8 +18,14 @@ package org.graylog2.plugin.inputs;
 
 import java.util.Map;
 
+/**
+ * 转换器
+ */
 public abstract class Converter {
 
+    /**
+     * 支持的所有转换函数
+     */
     public enum Type {
         NUMERIC,
         DATE,
@@ -36,7 +42,13 @@ public abstract class Converter {
         LOOKUP_TABLE
     }
 
+    /**
+     * 该转换器对应的类型
+     */
     private final Type type;
+    /**
+     * 可能需要借助些配置项
+     */
     private final Map<String, Object> config;
 
     public Converter(Type type, Map<String, Object> config) {

@@ -29,6 +29,9 @@ import javax.inject.Inject;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * 描述被持久化的消息
+ */
 public class PersistedInputsImpl implements PersistedInputs {
     private static final Logger LOG = LoggerFactory.getLogger(PersistedInputsImpl.class);
     private final InputService inputService;

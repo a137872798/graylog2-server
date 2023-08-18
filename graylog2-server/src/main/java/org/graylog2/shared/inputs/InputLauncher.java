@@ -37,10 +37,24 @@ import java.util.concurrent.ThreadFactory;
 import static com.codahale.metrics.MetricRegistry.name;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * 消息发送器 该对象控制 MessageInput的数据发送逻辑  在MessageInput中 又是通过transport传输数据
+ */
 public class InputLauncher {
     private static final Logger LOG = LoggerFactory.getLogger(InputLauncher.class);
+
+    /**
+     * IOState 对应某个 MessageInput
+     */
     private final IOState.Factory<MessageInput> inputStateFactory;
+    /**
+     * 存储message的容器
+     */
     private final InputBuffer inputBuffer;
+
+    /**
+     * 描述被持久化的输入消息
+     */
     private final PersistedInputs persistedInputs;
     private final InputRegistry inputRegistry;
     private final ExecutorService executor;

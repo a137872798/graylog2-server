@@ -43,6 +43,9 @@ import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 提取器对象
+ */
 public abstract class Extractor implements EmbeddedPersistable {
     private static final Logger LOG = LoggerFactory.getLogger(Extractor.class);
 
@@ -61,10 +64,16 @@ public abstract class Extractor implements EmbeddedPersistable {
     public static final String FIELD_CONVERTER_TYPE = "type";
     public static final String FIELD_CONVERTER_CONFIG = "config";
 
+    // 这里显示了一些支持的抽取方式
     public enum Type {
+
+        // 匹配子串
         SUBSTRING,
+        // 匹配正则命中的
         REGEX,
+        // 正则命中后并进行替换
         REGEX_REPLACE,
+        // 基于某个标记进行分割
         SPLIT_AND_INDEX,
         COPY_INPUT,
         GROK,
@@ -104,16 +113,29 @@ public abstract class Extractor implements EmbeddedPersistable {
     protected final String title;
     protected final Type superType;
     protected final CursorStrategy cursorStrategy;
+    /**
+     * 抽取出来后的目标字段
+     */
     protected final String targetField;
+    /**
+     * 代表本次要抽取的目标字段
+     */
     protected final String sourceField;
     protected final String creatorUserId;
     protected final Map<String, Object> extractorConfig;
+
+    /**
+     * 转换器的职能是转换字段的值
+     */
     protected final List<Converter> converters;
     protected final ConditionType conditionType;
     protected final String conditionValue;
 
     protected long order;
 
+    /**
+     * 正则表达式
+     */
     protected Pattern regexConditionPattern;
 
     private final Counter conditionHitsCounter;
@@ -131,6 +153,7 @@ public abstract class Extractor implements EmbeddedPersistable {
 
     /**
      * Performs the extractor run.
+     * 抽取某个字段 可能会产生多个结果
      *
      * @param field the field to extract
      * @return the extraction result
@@ -138,6 +161,23 @@ public abstract class Extractor implements EmbeddedPersistable {
      */
     protected abstract Result[] run(String field);
 
+    /**
+     * 每次抽取都生成一个该对象吗 ?    参数对应message的各个字段
+     * @param metricRegistry
+     * @param id
+     * @param title
+     * @param order
+     * @param type   描述了如何进行抽取
+     * @param cursorStrategy
+     * @param sourceField 待抽取字段
+     * @param targetField 抽取后的目标字段
+     * @param extractorConfig
+     * @param creatorUserId
+     * @param converters  可以对抽取出来的字段进行转换
+     * @param conditionType
+     * @param conditionValue   判断如何确定是否要抽取
+     * @throws ReservedFieldException
+     */
     public Extractor(MetricRegistry metricRegistry,
                      String id,
                      String title,
@@ -151,6 +191,8 @@ public abstract class Extractor implements EmbeddedPersistable {
                      List<Converter> converters,
                      ConditionType conditionType,
                      String conditionValue) throws ReservedFieldException {
+
+        // 本次要抽取的字段是一个保留字段(内置字段)  但是不包含set方法
         if (Message.RESERVED_FIELDS.contains(targetField) && !Message.RESERVED_SETTABLE_FIELDS.contains(targetField)) {
             throw new ReservedFieldException("You cannot apply an extractor on reserved field [" + targetField + "].");
         }
@@ -171,10 +213,12 @@ public abstract class Extractor implements EmbeddedPersistable {
         this.conditionType = conditionType;
         this.conditionValue = conditionValue;
 
+        // 将抽取条件变成正则对象
         if (conditionType.equals(ConditionType.REGEX)) {
             this.regexConditionPattern = Pattern.compile(conditionValue, Pattern.DOTALL);
         }
 
+        // TODO 测量相关
         final String metricsPrefix = name(getClass(), getType().toString().toLowerCase(Locale.ENGLISH), getId());
         this.conditionHitsCounterName = name(metricsPrefix, "conditionHits");
         this.conditionMissesCounterName = name(metricsPrefix, "conditionMisses");
@@ -190,6 +234,10 @@ public abstract class Extractor implements EmbeddedPersistable {
         this.completeTimer = metricRegistry.timer(completeTimerName);
     }
 
+    /**
+     * 对消息进行抽取
+     * @param msg
+     */
     public void runExtractor(Message msg) {
         try(final Timer.Context ignored = completeTimer.time()) {
             final String field;
@@ -202,7 +250,7 @@ public abstract class Extractor implements EmbeddedPersistable {
 
                 field = (String) msg.getField(sourceField);
 
-                // Decide if to extract at all.
+                // Decide if to extract at all.   ConditionType.STRING 类型代表要包含目标值
                 if (conditionType.equals(ConditionType.STRING)) {
                     if (field.contains(conditionValue)) {
                         conditionHitsCounter.inc();
@@ -210,6 +258,7 @@ public abstract class Extractor implements EmbeddedPersistable {
                         conditionMissesCounter.inc();
                         return;
                     }
+                    // 正则要匹配成功
                 } else if (conditionType.equals(ConditionType.REGEX)) {
                     if (regexConditionPattern.matcher(field).find()) {
                         conditionHitsCounter.inc();
@@ -223,6 +272,7 @@ public abstract class Extractor implements EmbeddedPersistable {
             try (final Timer.Context ignored2 = executionTimer.time()) {
                 Result[] results;
                 try {
+                    // 这里开始抽取
                     results = run(field);
                 } catch (ExtractorException e) {
                     final String error = "Could not apply extractor <" + getTitle() + " (" + getId() + ")>";
@@ -231,8 +281,10 @@ public abstract class Extractor implements EmbeddedPersistable {
                     return;
                 }
 
+                // 没有抽取到东西
                 if (results == null || results.length == 0 || Arrays.stream(results).anyMatch(result -> result.getValue() == null)) {
                     return;
+                    // 抽取到的字段存入 msg
                 } else if (results.length == 1 && results[0].target == null) {
                     // results[0].target is null if this extractor cannot produce multiple fields use targetField in that case
                     msg.addField(targetField, results[0].getValue());
@@ -243,6 +295,7 @@ public abstract class Extractor implements EmbeddedPersistable {
                 }
 
                 // Remove original from message?
+                // 根据策略决定是否要从原字段中移除命中的部分  如果是保留字段 不可以修改
                 if (cursorStrategy.equals(CursorStrategy.CUT) && !targetField.equals(sourceField) && !Message.RESERVED_FIELDS.contains(sourceField) && results[0].beginIndex != -1) {
                     final StringBuilder sb = new StringBuilder(field);
 
@@ -268,14 +321,20 @@ public abstract class Extractor implements EmbeddedPersistable {
         }
     }
 
+    /**
+     * 对抽取出来的字段进行转换
+     * @param msg
+     */
     private void runConverters(Message msg) {
         try(final Timer.Context ignored = converterTimer.time()) {
             for (Converter converter : converters) {
                 try {
+                    // 只支持处理String类型
                     if (!(msg.getField(targetField) instanceof String)) {
                         continue;
                     }
 
+                    // 转换目标字段
                     final Object convertedValue = converter.convert((String) msg.getField(targetField));
                     if (!converter.buildsMultipleFields()) {
                         // We have arrived here if no exception was thrown and can safely replace the original field.
@@ -284,9 +343,11 @@ public abstract class Extractor implements EmbeddedPersistable {
                         } else {
                             msg.addField(targetField, convertedValue);
                         }
+                        // 代表转换成变成了多个值
                     } else if (convertedValue instanceof Map) {
                         @SuppressWarnings("unchecked")
                         final Map<String, Object> additionalFields = new HashMap<>((Map<String, Object>) convertedValue);
+                        // 避免覆盖保留字段
                         for (final String reservedField : Message.RESERVED_FIELDS) {
                             if (additionalFields.containsKey(reservedField)) {
                                 if (LOG.isDebugEnabled()) {

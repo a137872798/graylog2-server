@@ -71,16 +71,34 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- *
+ * 作为一个input的仓库 提供了CRUD接口
+ * 继承自PersistedServiceImpl对象   该对象通过mongodb维护input
  */
 public class InputServiceImpl extends PersistedServiceImpl implements InputService {
+
     private static final Logger LOG = LoggerFactory.getLogger(InputServiceImpl.class);
 
+    /**
+     * 抽取器工厂  根据一组信息可以产生抽取器对象  还需要声明(sourceField, targetField)  表示从哪个字段抽取 以及抽取后的值如何命名
+     */
     private final ExtractorFactory extractorFactory;
+    /**
+     * 转换器工厂   转换器与抽取器配合使用 抽取出的字段会通过转换器转换
+     */
     private final ConverterFactory converterFactory;
+    /**
+     * 用于产生MessageInput对象  该对象与transport耦合 包含了传输数据的逻辑
+     */
     private final MessageInputFactory messageInputFactory;
+    /**
+     * 事件总线 可以发送事件以及设置订阅者对象
+     */
     private final EventBus clusterEventBus;
+    /**
+     * mongodb的一个集合 相当于RDBS的table
+     */
     private final DBCollection dbCollection;
+
     private final ObjectMapper objectMapper;
 
     @Inject
@@ -100,18 +118,28 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
         EncryptedValueMapperConfig.enableDatabase(this.objectMapper);
     }
 
+    /**
+     * Input对象都存储在mongodb中  利用上层提供的查询方法与mongodb交互
+     * @return
+     */
     @Override
     public List<Input> all() {
         final List<DBObject> ownInputs = query(InputImpl.class, new BasicDBObject());
 
         final ImmutableList.Builder<Input> inputs = ImmutableList.builder();
         for (final DBObject o : ownInputs) {
+            // 将bson还原成input对象 并设置到list中
             inputs.add(createFromDbObject(o));
         }
 
         return inputs.build();
     }
 
+    /**
+     * 指定nodeId查询  或者查询全局数据
+     * @param nodeId
+     * @return
+     */
     @Override
     public List<Input> allOfThisNode(final String nodeId) {
         final List<BasicDBObject> query = ImmutableList.of(
@@ -127,6 +155,11 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
         return inputs.build();
     }
 
+    /**
+     * 基于type字段查询
+     * @param type
+     * @return
+     */
     @Override
     public List<Input> allByType(final String type) {
         final ImmutableList.Builder<Input> inputs = ImmutableList.builder();
@@ -165,6 +198,7 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
     private <T extends Persisted> String save(T model, boolean fireEvents) throws ValidationException {
         final String resultId = super.save(model);
         if (resultId != null && !resultId.isEmpty() && fireEvents) {
+            // 发布一个产生input的事件
             publishChange(InputCreated.create(resultId));
         }
         return resultId;
@@ -251,6 +285,12 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
         }
     }
 
+    /**
+     * 为某个input绑定一个抽取器
+     * @param input
+     * @param extractor
+     * @throws ValidationException
+     */
     @Override
     public void addExtractor(Input input, Extractor extractor) throws ValidationException {
         embed(input, InputImpl.EMBEDDED_EXTRACTORS, extractor);
@@ -274,15 +314,25 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
         publishChange(InputUpdated.create(input.getId()));
     }
 
+    /**
+     * 从input中检索出静态字段
+     * @param input
+     * @return
+     */
     @Override
     public List<Map.Entry<String, String>> getStaticFields(Input input) {
+
+        // 没有静态字段 返回空
         if (input.getFields().get(InputImpl.EMBEDDED_STATIC_FIELDS) == null) {
             return Collections.emptyList();
         }
 
         final ImmutableList.Builder<Map.Entry<String, String>> listBuilder = ImmutableList.builder();
+
+        // 读取静态字段 对应的是一个list对象
         final BasicDBList mSF = (BasicDBList) input.getFields().get(InputImpl.EMBEDDED_STATIC_FIELDS);
         for (final Object element : mSF) {
+            // BSON对象 读取不需要再经过网络和磁盘了
             final DBObject ex = (BasicDBObject) element;
             try {
                 final Map.Entry<String, String> staticField =
@@ -297,6 +347,11 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
         return listBuilder.build();
     }
 
+    /**
+     * 获取input关联的所有抽取器
+     * @param input
+     * @return
+     */
     @Override
     @SuppressWarnings("unchecked")
     public List<Extractor> getExtractors(Input input) {
@@ -321,6 +376,7 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
             }
 
             try {
+                // 通过抽取bson中的各个字段  生成抽取器
                 final Extractor extractor = extractorFactory.factory(
                         (String) ex.get(Extractor.FIELD_ID),
                         (String) ex.get(Extractor.FIELD_TITLE),
@@ -512,6 +568,11 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
         this.clusterEventBus.post(event);
     }
 
+    /**
+     * 将 BSON对象转换成input     InputImpl本身也只是一个简单的对象
+     * @param o
+     * @return
+     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private InputImpl createFromDbObject(DBObject o) {
         final Map<String, Object> inputMap = new HashMap<>(o.toMap());
@@ -523,6 +584,7 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
             return new InputImpl((ObjectId) inputMap.get(InputImpl.FIELD_ID), inputMap);
         }
 
+        // TODO
         final Map<String, Object> config = new HashMap<>((Map) inputMap.get(MessageInput.FIELD_CONFIGURATION));
         encryptedFields.forEach(field -> {
             final var encryptedValue = objectMapper.convertValue(config.get(field), EncryptedValue.class);

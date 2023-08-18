@@ -255,6 +255,14 @@ public class PersistedServiceImpl implements PersistedService {
         return validate(model, model.getFields());
     }
 
+    /**
+     * 将某个实体嵌入到model的某个字段中
+     * @param model 预备被嵌入的实体
+     * @param key   内嵌字段
+     * @param o     插入的对象
+     * @param <T>
+     * @throws ValidationException
+     */
     protected <T extends Persisted> void embed(T model, String key, EmbeddedPersistable o) throws ValidationException {
         Map<String, List<ValidationResult>> errors = validate(model.getEmbeddedValidations(key), o.getPersistedFields());
         if (!errors.isEmpty()) {

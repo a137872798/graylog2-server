@@ -23,6 +23,9 @@ import org.graylog2.plugin.inputs.Converter;
 import javax.inject.Inject;
 import java.util.Map;
 
+/**
+ * 转换器工厂  通过指定要转换的类型 生成对应的Converter对象
+ */
 public class ConverterFactory {
     private final LookupTableService lookupTableService;
 

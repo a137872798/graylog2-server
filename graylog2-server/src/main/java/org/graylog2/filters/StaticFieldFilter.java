@@ -42,6 +42,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author Lennart Koopmann <lennart@torch.sh>
+ *     静态字段过滤器
  */
 public class StaticFieldFilter implements MessageFilter {
 
@@ -49,6 +50,9 @@ public class StaticFieldFilter implements MessageFilter {
 
     private static final String NAME = "Static field appender";
 
+    /**
+     * 维护每个 input对象的静态字段
+     */
     private final ConcurrentMap<String, List<Map.Entry<String, String>>> staticFields = new ConcurrentHashMap<>();
 
     private final InputService inputService;
@@ -82,6 +86,10 @@ public class StaticFieldFilter implements MessageFilter {
         return false;
     }
 
+    /**
+     * 感知到产生了一个新的数据
+     * @param event
+     */
     @Subscribe
     @SuppressWarnings("unused")
     public void handleInputCreate(final InputCreated event) {
@@ -89,6 +97,10 @@ public class StaticFieldFilter implements MessageFilter {
         scheduler.submit(() -> loadStaticFields(event.id()));
     }
 
+    /**
+     * 当input对象被删除后 就可以从staticFields中删除数据了
+     * @param event
+     */
     @Subscribe
     @SuppressWarnings("unused")
     public void handleInputDelete(final InputDeleted event) {
@@ -102,6 +114,10 @@ public class StaticFieldFilter implements MessageFilter {
         scheduler.submit(() -> loadStaticFields(event.id()));
     }
 
+    /**
+     * 每次服务重新运行时 重新加载所有input的静态字段
+     * @param lifecycle
+     */
     @Subscribe
     @SuppressWarnings("unused")
     public void lifecycleChanged(Lifecycle lifecycle) {
@@ -121,6 +137,7 @@ public class StaticFieldFilter implements MessageFilter {
     private void loadStaticFields(final String inputId) {
         LOG.debug("Re-loading static fields for input <{}> into cache.", inputId);
         try {
+            // 根据id 检索输入数据
             final Input input = inputService.find(inputId);
             staticFields.put(inputId, ImmutableList.copyOf(inputService.getStaticFields(input)));
         } catch (NotFoundException e) {

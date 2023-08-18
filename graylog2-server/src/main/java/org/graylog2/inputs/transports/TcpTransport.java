@@ -43,6 +43,9 @@ import java.util.concurrent.Callable;
 import static io.netty.handler.codec.Delimiters.lineDelimiter;
 import static io.netty.handler.codec.Delimiters.nulDelimiter;
 
+/**
+ * 提供接入tcp的能力
+ */
 public class TcpTransport extends AbstractTcpTransport {
     public static final String CK_USE_NULL_DELIMITER = "use_null_delimiter";
     private static final String CK_MAX_MESSAGE_SIZE = "max_message_size";

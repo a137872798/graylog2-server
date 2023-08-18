@@ -19,11 +19,15 @@ package org.graylog2.plugin.configuration.fields;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 对应一个配置的值
+ */
 public interface ConfigurationField {
     int DEFAULT_POSITION = 100;  // corresponds to ConfigurationForm.jsx
     int PLACE_AT_END_POSITION = 200;
     boolean DEFAULT_IS_ENCRYPTED = false;  // corresponds to ConfigurationForm.jsx
 
+    // 描述该字段是否必填
     enum Optional {
         OPTIONAL,
         NOT_OPTIONAL

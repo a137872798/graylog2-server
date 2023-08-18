@@ -47,12 +47,19 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
+/**
+ * 消息过滤器 目前只有2个实现 ExtractorFilter/StaticFieldFilter
+ */
 public class ExtractorFilter implements MessageFilter {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractorFilter.class);
     private static final String NAME = "Extractor";
 
+    // 维护每个输入源对应的抽取器  内存够用吗?
     private final ConcurrentMap<String, List<Extractor>> extractors = new ConcurrentHashMap<>();
 
+    /**
+     * 通过该服务拿到输入的数据
+     */
     private final InputService inputService;
     private final ScheduledExecutorService scheduler;
 
@@ -92,6 +99,10 @@ public class ExtractorFilter implements MessageFilter {
         return false;
     }
 
+    /**
+     * 感知到新创建的输入
+     * @param event
+     */
     @Subscribe
     @SuppressWarnings("unused")
     public void handleInputCreate(final InputCreated event) {
@@ -150,11 +161,16 @@ public class ExtractorFilter implements MessageFilter {
         }
     }
 
+    /**
+     * 加载该input相关的所有抽取器
+     * @param inputId
+     */
     private void loadExtractors(final String inputId) {
         LOG.debug("Re-loading extractors for input <{}>", inputId);
 
         try {
             final Input input = inputService.find(inputId);
+            // 生成抽取器后 还要按照order进行排序
             final List<Extractor> sortedExtractors = inputService.getExtractors(input).stream()
                     .sorted(Comparator.comparingLong(Extractor::getOrder))
                     .collect(Collectors.toList());

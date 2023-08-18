@@ -20,9 +20,14 @@ import java.util.Map;
 
 /**
  * @author Lennart Koopmann <lennart@torch.sh>
+ * 描述一个被内嵌到input的对象   比如 Extractor
  */
 public interface EmbeddedPersistable {
 
+    /**
+     * 返回需要持久化的字段
+     * @return
+     */
     Map<String, Object> getPersistedFields();
 
 }

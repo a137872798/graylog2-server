@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 public abstract class NettyTransport implements Transport {
+
     public static final String CK_BIND_ADDRESS = "bind_address";
     public static final String CK_PORT = "port";
     public static final String CK_RECV_BUFFER_SIZE = "recv_buffer_size";

@@ -18,6 +18,14 @@ package org.graylog2.plugin.buffers;
 
 import org.graylog2.plugin.journal.RawMessage;
 
+/**
+ * 可以将原始数据插入到buffer中
+ */
 public interface InputBuffer extends EventBuffer {
+
+    /**
+     * 原始消息处理后 会设置到buffer中
+     * @param message
+     */
     void insert(RawMessage message);
 }

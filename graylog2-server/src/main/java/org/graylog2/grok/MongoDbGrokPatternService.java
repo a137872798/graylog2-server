@@ -52,6 +52,7 @@ import static org.graylog2.grok.GrokPatternService.ImportStrategy.ABORT_ON_CONFL
 
 /**
  * 通过mongodb实现正则表达式的持久化  该对象会注册到guice容器中
+ * 该对象主要包含和mongodb交互的逻辑
  */
 @Singleton
 public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
@@ -115,6 +116,11 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
         return Optional.ofNullable(pattern);
     }
 
+    /**
+     * 批量查询
+     * @param patternIds
+     * @return
+     */
     @Override
     public Set<GrokPattern> bulkLoad(Collection<String> patternIds) {
         final DBCursor<GrokPattern> dbCursor = dbCollection.find(DBQuery.in("_id", patternIds));
@@ -178,6 +184,8 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
             throw new ValidationException("Invalid pattern " + pattern);
         }
         WriteResult<GrokPattern, ObjectId> result = dbCollection.update(DBQuery.is("_id", new ObjectId(pattern.id())), pattern);
+
+        // 代表更新成功
         if (result.isUpdateOfExisting()) {
             clusterBus.post(GrokPatternsUpdatedEvent.create(ImmutableSet.of(pattern.name())));
             return pattern;
@@ -185,6 +193,13 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
         throw new ValidationException("Invalid pattern " + pattern);
     }
 
+    /**
+     * 批量存储
+     * @param patterns
+     * @param importStrategy
+     * @return
+     * @throws ValidationException
+     */
     @Override
     public List<GrokPattern> saveAll(Collection<GrokPattern> patterns, ImportStrategy importStrategy) throws ValidationException {
 
@@ -198,6 +213,7 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
         final Map<String, GrokPattern> existingPatternsByName =
                 loadAll().stream().collect(Collectors.toMap(GrokPattern::name, Function.identity()));
 
+        // 检测是否存在交集
         if (importStrategy == ABORT_ON_CONFLICT) {
             final Sets.SetView<String> conflictingNames
                     = Sets.intersection(newPatternsByName.keySet(), existingPatternsByName.keySet());
@@ -209,6 +225,8 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
                         + ".");
             }
         }
+
+        // 验证正则有效性
         validateAllOrThrow(patterns, importStrategy);
 
         final List<GrokPattern> savedPatterns = patterns.stream()
@@ -223,6 +241,7 @@ public class MongoDbGrokPatternService extends GrokPatternServiceImpl {
                 .map(dbCollection::save)
                 .map(WriteResult::getSavedObject).collect(Collectors.toList());
 
+        // 发送一个批量更新事件
         clusterBus.post(GrokPatternsUpdatedEvent.create(newPatternsByName.keySet()));
 
         return savedPatterns;

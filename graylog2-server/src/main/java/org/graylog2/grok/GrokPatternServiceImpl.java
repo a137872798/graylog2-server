@@ -39,7 +39,9 @@ abstract class GrokPatternServiceImpl implements GrokPatternService {
 
     @Override
     public Map<String, Object> match(GrokPattern pattern, String sampleData) throws GrokException {
+        // 除了本次传入的 之前存储的所有也会尝试使用
         final Set<GrokPattern> patterns = loadAll();
+        // 该对象可以将普通的正则表达式转换成 grok的正则对象
         final GrokCompiler grokCompiler = GrokCompiler.newInstance();
         for (GrokPattern storedPattern : patterns) {
             grokCompiler.register(storedPattern.name(), storedPattern.pattern());
@@ -49,6 +51,12 @@ abstract class GrokPatternServiceImpl implements GrokPatternService {
         return grok.match(sampleData).captureFlattened();
     }
 
+    /**
+     * 检验正则有效性
+     * @param pattern
+     * @return
+     * @throws GrokException  报错代表表达式本身有问题
+     */
     @Override
     public boolean validate(GrokPattern pattern) throws GrokException {
         checkNotNull(pattern, "A pattern must be given");

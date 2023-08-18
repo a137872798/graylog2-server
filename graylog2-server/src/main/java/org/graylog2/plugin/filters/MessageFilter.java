@@ -18,6 +18,9 @@ package org.graylog2.plugin.filters;
 
 import org.graylog2.plugin.Message;
 
+/**
+ * 消息过滤器
+ */
 public interface MessageFilter {
     /**
      * Process a Message

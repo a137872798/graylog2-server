@@ -16,6 +16,9 @@
  */
 package org.graylog2.plugin.buffers;
 
+/**
+ * api 表示使用了多少空间
+ */
 public interface EventBuffer {
     long getUsage();
 

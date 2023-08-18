@@ -55,6 +55,9 @@ public class InputImpl extends PersistedImpl implements Input {
     public static final String FIELD_STATIC_FIELD_KEY = "key";
     public static final String FIELD_STATIC_FIELD_VALUE = "value";
 
+    /**
+     * 描述会作用到该input上的各种抽取器
+     */
     public static final String EMBEDDED_EXTRACTORS = "extractors";
     public static final String EMBEDDED_STATIC_FIELDS = "static_fields";
 

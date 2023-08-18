@@ -32,10 +32,16 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 代表一个配置对象 内部可以包含多个配置字段
+ */
 public class ConfigurationRequest {
     private static final Logger log = LoggerFactory.getLogger(ConfigurationRequest.class);
     private static final String WILDCARD_IP_ADDRESS = "0.0.0.0";
 
+    /**
+     * 关联的配置字段
+     */
     private final Map<String, ConfigurationField> fields = Maps.newLinkedHashMap();
 
     public ConfigurationRequest() {
@@ -70,6 +76,11 @@ public class ConfigurationRequest {
         return fields.remove(fieldName) != null;
     }
 
+    /**
+     * 基于各个字段产生req对象
+     * @param fields
+     * @return
+     */
     public static ConfigurationRequest createWithFields(ConfigurationField... fields) {
         final ConfigurationRequest configurationRequest = new ConfigurationRequest();
         configurationRequest.addFields(Lists.newArrayList(fields));
@@ -99,6 +110,11 @@ public class ConfigurationRequest {
         return configs;
     }
 
+    /**
+     * 检验该配置对象是否合法
+     * @param configuration
+     * @throws ConfigurationException
+     */
     public void check(Configuration configuration) throws ConfigurationException {
         for (ConfigurationField field : fields.values()) {
             if (field.isOptional().equals(ConfigurationField.Optional.NOT_OPTIONAL)) {
@@ -147,6 +163,8 @@ public class ConfigurationRequest {
     /**
      * Creates a new {@link org.graylog2.plugin.configuration.Configuration configuration object} containing only the
      * fields specified in this request object.
+     *
+     * 基于已经存在的config 产生一个新对象
      * @param config original Configuration
      * @return filtered Configuration, not null but might be empty
      */

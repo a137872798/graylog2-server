@@ -26,7 +26,11 @@ import org.graylog2.plugin.inputs.codecs.CodecAggregator;
 
 import javax.annotation.Nullable;
 
+/**
+ * 传输层 描述了如何推送数据
+ */
 public interface Transport {
+
     void setMessageAggregator(CodecAggregator aggregator);
 
     void launch(MessageInput input) throws MisfireException;

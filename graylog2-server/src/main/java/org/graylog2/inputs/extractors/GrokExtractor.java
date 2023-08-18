@@ -29,9 +29,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 使用优化的grok进行正则匹配
+ */
 public class GrokExtractor extends Extractor {
     public static final String CONFIG_GROK_PATTERN = "grok_pattern";
 
+    /**
+     * 该对象缓存了正则表达式 并且正则表达式是经过优化的(grok)
+     */
     private GrokPatternRegistry grokPatternRegistry;
     private String pattern;
     private boolean namedCapturesOnly;

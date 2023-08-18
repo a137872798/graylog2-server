@@ -26,7 +26,14 @@ import javax.inject.Inject;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * 根据MessageInput类型 产生不同的对象
+ */
 public class MessageInputFactory {
+
+    /**
+     * 工厂类通过guice提前注入
+     */
     private final Map<String, MessageInput.Factory<? extends MessageInput>> inputFactories;
 
     @Inject

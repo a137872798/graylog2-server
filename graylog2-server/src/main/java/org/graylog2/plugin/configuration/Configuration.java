@@ -46,6 +46,7 @@ public class Configuration implements Serializable {
             .enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
     public static final Configuration EMPTY_CONFIGURATION = new Configuration(null);
 
+    // 各个配置项 按照不同类型存储在不同容器中
     @JsonProperty
     private final Map<String, Object> source;
     @JsonIgnore
@@ -59,6 +60,10 @@ public class Configuration implements Serializable {
     @JsonIgnore
     private final Map<String, EncryptedValue> encryptedValues = Maps.newHashMap();
 
+    /**
+     * 将map的各个字段 按照不同类型存储到不同的容器中
+     * @param m
+     */
     @JsonCreator
     public Configuration(@JsonProperty("source") @Nullable Map<String, Object> m) {
         this.source = firstNonNull(m, Collections.<String, Object>emptyMap());

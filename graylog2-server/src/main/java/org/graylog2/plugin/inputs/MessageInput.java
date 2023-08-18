@@ -46,9 +46,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 描述一个消息源 可以产生并发送input
+ */
 public abstract class MessageInput implements Stoppable {
     private static final Logger LOG = LoggerFactory.getLogger(MessageInput.class);
 
+    // 这些字段可以对应到input对象上
     public static final String FIELD_ID = "_id";
     public static final String FIELD_TYPE = "type";
     public static final String FIELD_NODE_ID = "node_id";
@@ -67,21 +71,45 @@ public abstract class MessageInput implements Stoppable {
     @SuppressWarnings("StaticNonFinalField")
     private static int defaultRecvBufferSize = 1024 * 1024;
 
+    // 每条消息对应一个序列号
     private final AtomicLong sequenceNr;
     private final MetricRegistry metricRegistry;
+    /**
+     * 通过该对象进行数据传输
+     */
     private final Transport transport;
     private final MetricRegistry localRegistry;
+    /**
+     * 编解码器
+     */
     private final Codec codec;
+
+    /**
+     * 每个MessageInput对象 对应一种消息 消息有自己的描述信息
+     */
     private final Descriptor descriptor;
+    /**
+     * 通过该对象可以启停服务
+     */
     private final ServerStatus serverStatus;
+    // TODO
     private final Meter incomingMessages;
     private final Meter rawSize;
+
+    /**
+     * 存储静态字段
+     */
     private final Map<String, String> staticFields = Maps.newConcurrentMap();
+
+    /**
+     * 描述一个配置对象  配置值可以作用到该对象上
+     */
     private final ConfigurationRequest requestedConfiguration;
     /**
      * This is being used to decide which minimal set of configuration values need to be serialized when a message
      * is written to the journal. The message input's config contains transport configuration as well, but we want to
      * avoid serialising those parts of the configuration in order to save bytes on disk/network.
+     * 内部按照类型存放了不同的配置项
      */
     private final Configuration codecConfig;
     private final Counter globalIncomingMessages;
@@ -97,10 +125,25 @@ public abstract class MessageInput implements Stoppable {
     protected String contentPack;
 
     protected final Configuration configuration;
+
+    /**
+     * 存储原始数据的buffer
+     */
     protected InputBuffer inputBuffer;
     private String nodeId;
     private MetricSet transportMetrics;
 
+    /**
+     *
+     * @param metricRegistry
+     * @param configuration
+     * @param transport
+     * @param localRegistry
+     * @param codec
+     * @param config
+     * @param descriptor
+     * @param serverStatus
+     */
     public MessageInput(MetricRegistry metricRegistry,
                         Configuration configuration,
                         Transport transport,
@@ -118,13 +161,17 @@ public abstract class MessageInput implements Stoppable {
         this.codec = codec;
         this.descriptor = descriptor;
         this.serverStatus = serverStatus;
+        // 将config 转换成 ConfigurationRequest
         this.requestedConfiguration = config.combinedRequestedConfiguration();
+        // 生成编码器相关的配置项
         this.codecConfig = config.codecConfig.getRequestedConfiguration().filter(codec.getConfiguration());
         globalRawSize = metricRegistry.counter(GlobalMetricNames.INPUT_TRAFFIC);
         rawSize = localRegistry.meter("rawSize");
         incomingMessages = localRegistry.meter("incomingMessages");
         globalIncomingMessages = metricRegistry.counter(GlobalMetricNames.INPUT_THROUGHPUT);
         emptyMessages = localRegistry.counter("emptyMessages");
+
+        // 标注消息的序列号
         sequenceNr = new AtomicLong(0);
     }
 
@@ -136,6 +183,9 @@ public abstract class MessageInput implements Stoppable {
         defaultRecvBufferSize = size;
     }
 
+    /**
+     * TODO
+     */
     public void initialize() {
         this.transportMetrics = transport.getMetricSet();
 
@@ -154,13 +204,22 @@ public abstract class MessageInput implements Stoppable {
         cr.check(getConfiguration());
     }
 
+    /**
+     * 不断的处理 RawMessage 后 消息会堆积在buffer中  之后通过该方法完成发送
+     * @param buffer
+     * @param inputFailureRecorder
+     * @throws MisfireException
+     */
     public void launch(final InputBuffer buffer, InputFailureRecorder inputFailureRecorder) throws MisfireException {
         this.inputBuffer = buffer;
         try {
+            // TODO 兼容性代码
             launch(buffer); // call this for inputs that still overload the one argument launch method
 
+            // 为传输层设置消息累加器
             transport.setMessageAggregator(codec.getAggregator());
 
+            // 通过传输层发送消息
             transport.launch(this, inputFailureRecorder);
         } catch (Exception e) {
             inputBuffer = null;
@@ -183,6 +242,9 @@ public abstract class MessageInput implements Stoppable {
         cleanupMetrics();
     }
 
+    /**
+     * TODO
+     */
     private void cleanupMetrics() {
         if (localRegistry != null && localRegistry.getMetrics() != null) {
             for (String metricName : localRegistry.getMetrics().keySet()) {
@@ -315,6 +377,10 @@ public abstract class MessageInput implements Stoppable {
         return result;
     }
 
+    /**
+     * 抽取出本对象的各字段信息
+     * @return
+     */
     public Map<String, Object> asMap() {
         // This has to be mutable (see #asMapMasked) and support null values!
         final Map<String, Object> map = new HashMap<>();
@@ -380,8 +446,14 @@ public abstract class MessageInput implements Stoppable {
         return codec;
     }
 
+    /**
+     * 处理原始消息
+     * @param rawMessage
+     */
     public void processRawMessage(RawMessage rawMessage) {
         final int payloadLength = rawMessage.getPayload().length;
+
+        // 代表处理了一个空消息
         if (payloadLength == 0) {
             LOG.debug("Discarding empty message {} from input {} (remote address {}). Turn logger org.graylog2.plugin.journal.RawMessage to TRACE to see originating stack trace.",
                     rawMessage.getId(),
@@ -395,9 +467,10 @@ public abstract class MessageInput implements Stoppable {
         rawMessage.setCodecName(codec.getName());
         rawMessage.setCodecConfig(codecConfig);
         rawMessage.addSourceNode(getId(), serverStatus.getNodeId());
-        // Wrap at unsigned int maximum
+        // Wrap at unsigned int maximum  每条原始消息经过该方法处理后 被设置序列号  并且序列号递增
         rawMessage.setSequenceNr((int) sequenceNr.getAndUpdate(i -> i == 0xFFFF_FFFFL ? 0 : i + 1));
 
+        // 将加工后的原始消息设置到buffer中
         inputBuffer.insert(rawMessage);
 
         incomingMessages.mark();
@@ -426,6 +499,10 @@ public abstract class MessageInput implements Stoppable {
         return descriptor.isForwarderCompatible();
     }
 
+    /**
+     * 可以通过工厂创建 MessageInput对象
+     * @param <M>
+     */
     public interface Factory<M> {
         M create(Configuration configuration);
 

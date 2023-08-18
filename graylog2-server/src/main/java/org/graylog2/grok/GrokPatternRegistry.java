@@ -57,12 +57,20 @@ public class GrokPatternRegistry {
     private final LoadingCache<String, Grok> grokCache;
     private final LoadingCache<String, Grok> grokCacheNamedOnly;
 
+
+    /**
+     *
+     * @param serverEventBus
+     * @param grokPatternService  正则服务对象
+     * @param daemonExecutor 后台任务定时器
+     */
     @Inject
     public GrokPatternRegistry(EventBus serverEventBus,
                                GrokPatternService grokPatternService,
                                @Named("daemonScheduler") ScheduledExecutorService daemonExecutor) {
         this.grokPatternService = grokPatternService;
 
+        // 每隔一分钟 刷新一次缓存
         grokCache = CacheBuilder.newBuilder()
                 .expireAfterAccess(1, TimeUnit.MINUTES) // prevent from hanging on to memory forever
                 .build(asyncReloading(new GrokReloader(false), daemonExecutor));
@@ -114,6 +122,7 @@ public class GrokPatternRegistry {
     private void reload() {
         final Set<GrokPattern> grokPatterns = grokPatternService.loadAll();
         patterns.set(grokPatterns);
+        // 清理后下次会惰性触发
         grokCache.invalidateAll();
         grokCacheNamedOnly.invalidateAll();
     }
@@ -122,6 +131,9 @@ public class GrokPatternRegistry {
         return patterns.get();
     }
 
+    /**
+     * 该对象描述如何缓存数据
+     */
     private class GrokReloader extends CacheLoader<String, Grok> {
         private final boolean namedCapturesOnly;
 
