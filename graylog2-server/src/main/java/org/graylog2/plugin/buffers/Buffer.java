@@ -28,10 +28,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author Lennart Koopmann <lennart@socketfeed.com>
+ * 存储消息的容器
  */
 public abstract class Buffer implements EventBuffer {
     private static final Logger log = LoggerFactory.getLogger(Buffer.class);
 
+    // 实际上是传递给了另一个RingBuffer  在处理层面做了一层解耦
     protected RingBuffer<MessageEvent> ringBuffer;
     protected int ringBufferSize;
 
@@ -60,12 +62,19 @@ public abstract class Buffer implements EventBuffer {
         long sequence = ringBuffer.next();
         MessageEvent event = ringBuffer.get(sequence);
         event.setMessage(message);
+        // 唤醒阻塞线程
         ringBuffer.publish(sequence);
 
         afterInsert(1);
 
     }
 
+    /**
+     * 代表阻塞在环形缓冲区线程的阻塞模式
+     * @param waitStrategyName
+     * @param configOptionName
+     * @return
+     */
     protected WaitStrategy getWaitStrategy(String waitStrategyName, String configOptionName) {
         switch (waitStrategyName) {
             case "sleeping":
@@ -83,6 +92,10 @@ public abstract class Buffer implements EventBuffer {
         }
     }
 
+    /**
+     * 当游标推进后触发的钩子
+     * @param n
+     */
     protected abstract void afterInsert(int n);
 
     protected void insert(Message[] messages) {

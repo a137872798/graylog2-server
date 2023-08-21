@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 
+/**
+ * 也是打印日志
+ */
 @Singleton
 @ChannelHandler.Sharable
 public class PromiseFailureHandler extends ChannelOutboundHandlerAdapter {

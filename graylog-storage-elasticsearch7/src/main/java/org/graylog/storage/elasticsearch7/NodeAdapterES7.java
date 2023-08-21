@@ -26,6 +26,9 @@ import javax.inject.Inject;
 import java.util.Locale;
 import java.util.Optional;
 
+/**
+ * 使用ES
+ */
 public class NodeAdapterES7 implements NodeAdapter {
     private final PlainJsonApi jsonApi;
 

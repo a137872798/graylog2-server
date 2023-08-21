@@ -57,6 +57,9 @@ import static org.graylog2.audit.AuditEventTypes.ES_INDEX_RANGE_CREATE;
 import static org.graylog2.audit.AuditEventTypes.ES_INDEX_RANGE_DELETE;
 import static org.graylog2.indexer.indices.Indices.checkIfHealthy;
 
+/**
+ * 描述一个索引的范围
+ */
 @Singleton
 public class MongoIndexRangeService implements IndexRangeService {
     private static final Logger LOG = LoggerFactory.getLogger(MongoIndexRangeService.class);

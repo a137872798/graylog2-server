@@ -34,6 +34,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * 处理编码后的数据
+ */
 public class JournallingMessageHandler implements EventHandler<RawMessageEvent> {
     private static final Logger log = LoggerFactory.getLogger(JournallingMessageHandler.class);
 

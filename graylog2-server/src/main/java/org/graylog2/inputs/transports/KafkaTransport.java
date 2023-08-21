@@ -126,6 +126,10 @@ public class KafkaTransport extends ThrottleableTransport {
     private volatile CountDownLatch pausedLatch = new CountDownLatch(1);
 
     private CountDownLatch stopLatch;
+
+    /**
+     * kafka消费者
+     */
     private ConsumerConnector cc;
 
     @AssistedInject
@@ -193,6 +197,10 @@ public class KafkaTransport extends ThrottleableTransport {
     public void setMessageAggregator(CodecAggregator ignored) {
     }
 
+    /**
+     * 该方法描述了如何将MessageInput绑定到kafka消费者上
+     * @param input
+     */
     @Override
     public void doLaunch(final MessageInput input) {
         final boolean legacyMode = configuration.getBoolean(CK_LEGACY, true);
@@ -215,6 +223,7 @@ public class KafkaTransport extends ThrottleableTransport {
         if (legacyMode) {
             doLaunchLegacy(input);
         } else {
+            // 根据设置的kafka-server地址 生成消费者对象
             doLaunchConsumer(input);
         }
         scheduler.scheduleAtFixedRate(() -> lastSecBytesRead.set(lastSecBytesReadTmp.getAndSet(0)), 1, 1, TimeUnit.SECONDS);
@@ -248,6 +257,9 @@ public class KafkaTransport extends ThrottleableTransport {
         IntStream.range(0, numThreads).forEach(i -> executor.submit(new ConsumerRunnable(props, input, i)));
     }
 
+    /**
+     * 每个线程对应一个消费者对象
+     */
     private class ConsumerRunnable implements Runnable {
         private final MessageInput input;
         private final KafkaConsumer<byte[], byte[]> consumer;
@@ -263,6 +275,8 @@ public class KafkaTransport extends ThrottleableTransport {
 
         private void consumeRecords(ConsumerRecords<byte[], byte[]> consumerRecords) {
             for (final ConsumerRecord<byte[], byte[]> record : consumerRecords) {
+
+                // 检测到此时被暂停
                 if (paused) {
                     // we try not to spin here, so we wait until the lifecycle goes back to running.
                     LOG.debug("Message processing is paused, blocking until message processing is turned back on.");
@@ -272,6 +286,8 @@ public class KafkaTransport extends ThrottleableTransport {
                 if (stopped) {
                     break;
                 }
+
+                // 此时处于节流状态
                 if (isThrottled()) {
                     blockUntilUnthrottled();
                 }
@@ -287,6 +303,7 @@ public class KafkaTransport extends ThrottleableTransport {
                 totalBytesRead.addAndGet(bytes.length);
                 lastSecBytesReadTmp.addAndGet(bytes.length);
 
+                // 交给input处理
                 final RawMessage rawMessage = new RawMessage(bytes);
                 input.processRawMessage(rawMessage);
             }
@@ -337,6 +354,10 @@ public class KafkaTransport extends ThrottleableTransport {
         }
     }
 
+    /**
+     * TODO
+     * @param input
+     */
     private void doLaunchLegacy(final MessageInput input) {
         final Properties props = new Properties();
 

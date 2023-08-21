@@ -37,6 +37,9 @@ import javax.inject.Inject;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Callable;
 
+/**
+ * 这个beats 应该是logStash的beats
+ */
 public class BeatsTransport extends AbstractTcpTransport {
     @Inject
     public BeatsTransport(@Assisted Configuration configuration,
@@ -49,9 +52,15 @@ public class BeatsTransport extends AbstractTcpTransport {
         super(configuration, throughputCounter, localRegistry, eventLoopGroup, eventLoopGroupFactory, nettyTransportConfiguration, tlsConfiguration);
     }
 
+    /**
+     * 区别就是这里添加了一个beats格式解码器
+     * @param input The {@link MessageInput} for which these child channel handlers are being added
+     * @return
+     */
     @Override
     protected LinkedHashMap<String, Callable<? extends ChannelHandler>> getCustomChildChannelHandlers(MessageInput input) {
         final LinkedHashMap<String, Callable<? extends ChannelHandler>> handlers = new LinkedHashMap<>(super.getCustomChildChannelHandlers(input));
+        // 里面包含了解码逻辑
         handlers.put("beats", BeatsFrameDecoder::new);
 
         return handlers;

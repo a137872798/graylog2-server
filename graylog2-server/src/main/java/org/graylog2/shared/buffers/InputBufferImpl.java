@@ -40,6 +40,9 @@ import static com.codahale.metrics.MetricRegistry.name;
 import static org.graylog2.shared.metrics.MetricUtils.constantGauge;
 import static org.graylog2.shared.metrics.MetricUtils.safelyRegister;
 
+/**
+ * 作为输入消息的容器   底层使用了环形缓冲区 需要其他消费者来拉取数据
+ */
 @Singleton
 public class InputBufferImpl implements InputBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(InputBufferImpl.class);
@@ -69,6 +72,7 @@ public class InputBufferImpl implements InputBuffer {
             for (int i = 0; i < numberOfHandlers; i++) {
                 handlers[i] = rawMessageEncoderHandlerProvider.get();
             }
+            // 代表先编码后处理
             disruptor.handleEventsWithWorkerPool(handlers).then(spoolingMessageHandlerProvider.get());
         } else {
             LOG.info("Message journal is disabled.");
@@ -76,6 +80,7 @@ public class InputBufferImpl implements InputBuffer {
             for (int i = 0; i < numberOfHandlers; i++) {
                 handlers[i] = directMessageHandlerProvider.get();
             }
+            // 代表直接处理
             disruptor.handleEventsWithWorkerPool(handlers);
         }
 

@@ -26,6 +26,9 @@ import org.graylog2.plugin.inputs.codecs.CodecAggregator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 该对象用于消息聚合
+ */
 public class ByteBufMessageAggregationHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private static final Logger LOG = LoggerFactory.getLogger(ByteBufMessageAggregationHandler.class);
 
@@ -45,6 +48,8 @@ public class ByteBufMessageAggregationHandler extends SimpleChannelInboundHandle
         try (Timer.Context ignored = aggregationTimer.time()) {
             result = aggregator.addChunk(msg);
         }
+
+        // 在这里做一层聚合
         final ByteBuf completeMessage = result.getMessage();
         if (completeMessage != null) {
             LOG.debug("Message aggregation completion, forwarding {}", completeMessage);

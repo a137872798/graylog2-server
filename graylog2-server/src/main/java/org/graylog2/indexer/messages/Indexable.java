@@ -23,6 +23,9 @@ import org.joda.time.DateTime;
 import javax.annotation.Nonnull;
 import java.util.Map;
 
+/**
+ * 代表一个可检索的对象 也就是已经存储到某个地方了
+ */
 public interface Indexable {
     /**
      * Returns the id to address the document in Elasticsearch.

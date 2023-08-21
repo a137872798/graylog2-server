@@ -68,10 +68,24 @@ import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
+/**
+ * 流服务对象  包含了与其他组件交互的逻辑   流本身是一个bean对象
+ */
 public class StreamServiceImpl extends PersistedServiceImpl implements StreamService {
     private static final Logger LOG = LoggerFactory.getLogger(StreamServiceImpl.class);
+
+    /**
+     * 提供有关StreamRule的crud服务
+     */
     private final StreamRuleService streamRuleService;
+
+    /**
+     * 提供有关Output的crud服务
+     */
     private final OutputService outputService;
+    /**
+     * 实际上提供IndexSetConfig的crud服务
+     */
     private final IndexSetService indexSetService;
     private final MongoIndexSet.Factory indexSetFactory;
     private final NotificationService notificationService;

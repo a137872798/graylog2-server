@@ -56,10 +56,16 @@ import static java.util.Objects.requireNonNull;
 import static org.graylog2.audit.AuditEventTypes.ES_WRITE_INDEX_UPDATE;
 import static org.graylog2.indexer.indices.Indices.checkIfHealthy;
 
+/**
+ * graylog 索引集的默认实现
+ */
 public class MongoIndexSet implements IndexSet {
     private static final Logger LOG = LoggerFactory.getLogger(MongoIndexSet.class);
 
     public static final String SEPARATOR = "_";
+    /**
+     * 偏转器是什么玩意?
+     */
     public static final String DEFLECTOR_SUFFIX = "deflector";
 
     // TODO: Hardcoded archive suffix. See: https://github.com/Graylog2/graylog2-server/issues/2058
@@ -69,9 +75,17 @@ public class MongoIndexSet implements IndexSet {
         MongoIndexSet create(IndexSetConfig config);
     }
 
+    /**
+     * 该索引相关的配置对象
+     */
     private final IndexSetConfig config;
+    /**
+     * 此时写入的索引别名
+     */
     private final String writeIndexAlias;
     private final Indices indices;
+
+    // 索引正则/偏转索引正则
     private final Pattern indexPattern;
     private final Pattern deflectorIndexPattern;
     private final String indexWildcard;

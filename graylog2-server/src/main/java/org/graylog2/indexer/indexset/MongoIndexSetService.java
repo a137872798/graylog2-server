@@ -43,12 +43,21 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 通过mongodb 服务提供索引集配置的crud
+ */
 public class MongoIndexSetService implements IndexSetService {
     public static final String COLLECTION_NAME = "index_sets";
 
     private final JacksonDBCollection<IndexSetConfig, ObjectId> collection;
+    /**
+     * 也是借助mongodb
+     */
     private final ClusterConfigService clusterConfigService;
     private final ClusterEventBus clusterEventBus;
+    /**
+     * 通过该对象可以访问 stream对象
+     */
     private final StreamService streamService;
 
     @Inject
@@ -100,6 +109,10 @@ public class MongoIndexSetService implements IndexSetService {
         return Optional.ofNullable(indexSetConfig);
     }
 
+    /**
+     * 获取默认的索引集配置对象  从集群配置中获取
+     * @return
+     */
     @Override
     public IndexSetConfig getDefault() {
         final DefaultIndexSetConfig defaultIndexSetConfig = clusterConfigService.get(DefaultIndexSetConfig.class);

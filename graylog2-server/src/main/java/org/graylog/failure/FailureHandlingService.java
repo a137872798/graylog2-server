@@ -42,17 +42,34 @@ import java.util.stream.Stream;
  * custom failure handlers via {@link com.google.inject.multibindings.Multibinder} -
  * see {@link org.graylog.failure.FailureHandler}. If no custom handlers found,
  * then the fallback one will be picked instead.
+ *
+ * FailureSubmissionService 负责提交失败信息
+ * FailureHandlingService   负责消费失败信息
  */
 @Singleton
 public class FailureHandlingService extends AbstractExecutionThreadService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    /**
+     * 包含一组处理失败的handler
+     */
     private final List<FailureHandler> fallbackFailureHandlerAsList;
     private final Set<FailureHandler> failureHandlers;
+    /**
+     * 存储失败对象的队列
+     */
     private final FailureSubmissionQueue failureSubmissionQueue;
     private final Configuration configuration;
+
+    /**
+     * 通过该对象可以提交偏移量
+     */
     private final MessageQueueAcknowledger acknowledger;
+
+    /**
+     * 处理错误信息的线程
+     */
     private Thread executionThread;
 
     @Inject
@@ -106,6 +123,10 @@ public class FailureHandlingService extends AbstractExecutionThreadService {
         failureSubmissionQueue.logStats("FailureHandlerService#triggerShutdown");
     }
 
+    /**
+     * 该方法为处理器的运行逻辑
+     * @throws Exception
+     */
     @Override
     protected void run() throws Exception {
 
@@ -128,6 +149,7 @@ public class FailureHandlingService extends AbstractExecutionThreadService {
     }
 
     private void handle(FailureBatch failureBatch) {
+        // 筛选处理器并处理
         suitableHandlers(failureBatch)
                 .forEach(handler -> {
                     try {

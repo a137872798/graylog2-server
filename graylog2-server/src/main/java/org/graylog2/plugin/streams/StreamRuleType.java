@@ -18,6 +18,9 @@ package org.graylog2.plugin.streams;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
+/**
+ * 表示流规则的类型  这个rule更像是描述如何去匹配流的数据
+ */
 public enum StreamRuleType {
     EXACT(1, "match exactly", "match exactly"),
     REGEX(2, "match regular expression", "match regular expression"),

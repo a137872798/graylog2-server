@@ -293,7 +293,9 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
      */
     @Override
     public void addExtractor(Input input, Extractor extractor) throws ValidationException {
+        // 代表要将抽取器 添加到input的内置字段
         embed(input, InputImpl.EMBEDDED_EXTRACTORS, extractor);
+        // 因为input本身发生了变化  发布新事件
         publishChange(ExtractorCreated.create(input.getId(), extractor.getId()));
     }
 
@@ -418,6 +420,11 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
         return extractor.get();
     }
 
+    /**
+     * 通过工厂对象生成抽取器内部的转换器
+     * @param extractor
+     * @return
+     */
     @SuppressWarnings("unchecked")
     private List<Converter> getConvertersOfExtractor(DBObject extractor) {
         final ImmutableList.Builder<Converter> listBuilder = ImmutableList.builder();
@@ -453,6 +460,12 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
         publishChange(InputUpdated.create(input.getId()));
     }
 
+    /**
+     * 一个Input对应一个MessageInput么?
+     * @param io
+     * @return
+     * @throws NoSuchInputTypeException
+     */
     @Override
     public MessageInput getMessageInput(Input io) throws NoSuchInputTypeException {
         final Configuration configuration = new Configuration(io.getConfiguration());
@@ -602,9 +615,14 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
                 .orElse(Set.of());
     }
 
+    /**
+     * 转换字段
+     * @param doc
+     */
     @Override
     protected void fieldTransformations(Map<String, Object> doc) {
         for (Map.Entry<String, Object> x : doc.entrySet()) {
+            // TODO 忽略加密的
             if (x.getValue() instanceof EncryptedValue encryptedValue) {
                 doc.put(x.getKey(), objectMapper.convertValue(encryptedValue, TypeReferences.MAP_STRING_OBJECT));
                 return;

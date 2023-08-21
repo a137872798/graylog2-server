@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.Objects.requireNonNull;
 
+// TODO
 public class GelfChunkAggregator implements CodecAggregator {
     private static final Logger log = LoggerFactory.getLogger(GelfChunkAggregator.class);
 

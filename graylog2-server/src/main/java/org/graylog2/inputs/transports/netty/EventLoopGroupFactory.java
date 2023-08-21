@@ -33,7 +33,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * 用于生成netty的事件循环组(io线程 也即服务器线程)
+ */
 public class EventLoopGroupFactory {
+
     private final NettyTransportConfiguration configuration;
 
     @Inject
@@ -43,6 +47,7 @@ public class EventLoopGroupFactory {
 
     public EventLoopGroup create(int numThreads, MetricRegistry metricRegistry, String metricPrefix) {
         final ThreadFactory threadFactory = threadFactory(metricPrefix, metricRegistry);
+        // 将业务处理放到指定的线程池
         final Executor executor = executor(metricPrefix, numThreads, threadFactory, metricRegistry);
 
         switch (configuration.getType()) {

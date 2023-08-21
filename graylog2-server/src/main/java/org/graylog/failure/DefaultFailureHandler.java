@@ -25,9 +25,14 @@ import javax.inject.Inject;
 /**
  * A fallback failure handler, which persists submitted failures in Mongo via {@link IndexFailureService}.
  * Only indexing failures supported.
+ *
+ * 默认的失败处理器对象   就是将信息存储到mongodb中
  */
 public class DefaultFailureHandler implements FailureHandler {
 
+    /**
+     * 通过该对象可以检索和存储错误对象
+     */
     private final IndexFailureService indexFailureService;
 
     @Inject

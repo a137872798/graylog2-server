@@ -99,6 +99,9 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static org.graylog.storage.opensearch2.OpenSearchClient.withTimeout;
 
+/**
+ * TODO OpenSearch 先忽略
+ */
 public class IndicesAdapterOS2 implements IndicesAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(IndicesAdapterOS2.class);
     private final OpenSearchClient client;

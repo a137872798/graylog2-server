@@ -26,6 +26,9 @@ import javax.inject.Inject;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 需要先对原始数据进行编码
+ */
 public class RawMessageEncoderHandler implements WorkHandler<RawMessageEvent> {
     private static final Logger log = LoggerFactory.getLogger(RawMessageEncoderHandler.class);
     private final Meter incomingMessages;
@@ -40,7 +43,7 @@ public class RawMessageEncoderHandler implements WorkHandler<RawMessageEvent> {
         incomingMessages.mark();
         event.setEncodedRawMessage(event.getRawMessage().encode());
         event.setMessageIdBytes(event.getRawMessage().getIdBytes());
-        
+
         if (log.isTraceEnabled()) {
             log.trace("Serialized message {} for journal, size {} bytes",
                       event.getRawMessage().getId(), event.getEncodedRawMessage().length);
@@ -50,6 +53,7 @@ public class RawMessageEncoderHandler implements WorkHandler<RawMessageEvent> {
         event.setMessageTimestamp(event.getRawMessage().getTimestamp());
 
         // clear for gc and to avoid promotion to tenured space
+        // 帮助GC回收
         event.setRawMessage(null);
     }
 }

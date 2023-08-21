@@ -23,6 +23,7 @@ import java.util.List;
 
 /**
  * @author Dennis Oelkers <dennis@torch.sh>
+ *     将失败对象变成可索引对象 并且由于继承自PersistedService 代表可以持久化
  */
 public interface IndexFailureService extends PersistedService {
     List<IndexFailure> all(int limit, int offset);

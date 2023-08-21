@@ -47,6 +47,9 @@ import java.util.concurrent.TimeUnit;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 该对象表示会处理数据 并输出到下游
+ */
 public class OutputBufferProcessor implements WorkHandler<MessageEvent> {
 
     private static final Logger LOG = LoggerFactory.getLogger(OutputBufferProcessor.class);

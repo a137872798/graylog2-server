@@ -20,6 +20,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.group.ChannelGroup;
 
+/**
+ * 将活跃的连接加入到channels中
+ */
 public class ChannelRegistrationHandler extends ChannelInboundHandlerAdapter {
     private final ChannelGroup channels;
 

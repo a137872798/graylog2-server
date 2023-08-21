@@ -99,6 +99,9 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static org.graylog.storage.elasticsearch7.ElasticsearchClient.withTimeout;
 
+/**
+ * 借助ES 提供真实的索引功能
+ */
 public class IndicesAdapterES7 implements IndicesAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(IndicesAdapterES7.class);
     private final ElasticsearchClient client;

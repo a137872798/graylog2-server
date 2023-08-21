@@ -42,6 +42,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 每种关键实体都有一种对应的服务 并且都是从mongodb中获取
+ * 提供CRUD的api
+ */
 public class StreamRuleServiceImpl extends PersistedServiceImpl implements StreamRuleService {
     private final ClusterEventBus clusterEventBus;
 
@@ -49,6 +53,7 @@ public class StreamRuleServiceImpl extends PersistedServiceImpl implements Strea
     public StreamRuleServiceImpl(MongoConnection mongoConnection,
                                  ClusterEventBus clusterEventBus) {
         super(mongoConnection);
+        // 为id构建索引
         collection(StreamRuleImpl.class).createIndex(StreamRuleImpl.FIELD_STREAM_ID);
         this.clusterEventBus = clusterEventBus;
     }

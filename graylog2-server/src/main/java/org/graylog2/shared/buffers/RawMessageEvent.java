@@ -25,6 +25,9 @@ import org.joda.time.DateTime;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 在 RingBuffer 中传输的对象
+ */
 public class RawMessageEvent {
 
     // the rawmessage will get be nulled as soon as the encoded raw message is being generated
@@ -43,6 +46,10 @@ public class RawMessageEvent {
             return new RawMessageEvent();
         }
     };
+
+    /**
+     * 描述如何将 RawMessage 转换成 RawMessageEvent
+     */
     public static final EventTranslatorOneArg<RawMessageEvent, RawMessage> TRANSLATOR = new EventTranslatorOneArg<RawMessageEvent, RawMessage>() {
         @Override
         public void translateTo(RawMessageEvent event, long sequence, RawMessage arg0) {

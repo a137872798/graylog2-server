@@ -23,6 +23,9 @@ import org.graylog2.plugin.inputs.MessageInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 打印接收到的数据
+ */
 public class PacketInformationDumper extends SimpleChannelInboundHandler<ByteBuf> {
     private static final Logger LOG = LoggerFactory.getLogger(PacketInformationDumper.class);
     private final Logger sourceInputLog;

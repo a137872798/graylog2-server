@@ -29,6 +29,9 @@ import java.util.Map;
 
 import static org.graylog2.shared.security.RestPermissions.INDICES_FAILURES;
 
+/**
+ * 代表一个包含 letterId的mongodb对象
+ */
 @DbEntity(collection = "index_failures",
           titleField = "message",
           readPermission = INDICES_FAILURES)

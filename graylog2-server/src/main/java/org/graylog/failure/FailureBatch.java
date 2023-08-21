@@ -24,10 +24,14 @@ import java.util.List;
 /**
  * A structure bearing a batch of failures. It guarantees all failures
  * to be instances of the same class
+ * 描述一组Failure对象
  */
 public class FailureBatch {
 
     private final List<? extends Failure> failures;
+    /**
+     * 这组failures的类型是一样的
+     */
     private final Class<? extends Failure> failureClass;
 
     private FailureBatch(List<? extends Failure> failures,

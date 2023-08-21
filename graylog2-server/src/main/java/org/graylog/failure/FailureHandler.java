@@ -26,6 +26,7 @@ package org.graylog.failure;
  * Multibinder<FailureHandler> failureHandlerBinder = Multibinder.newSetBinder(binder(), FailureHandler.class);
  * failureHandlerBinder.addBinding().to(MyCustomFailureHandler.class);
  * }</pre>
+ * 处理失败对象
  */
 public interface FailureHandler {
 

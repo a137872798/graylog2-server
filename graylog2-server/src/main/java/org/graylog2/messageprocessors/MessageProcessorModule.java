@@ -21,6 +21,9 @@ import org.graylog.plugins.pipelineprocessor.PipelineProcessorModule;
 import org.graylog.plugins.pipelineprocessor.db.mongodb.MongoDbServicesModule;
 import org.graylog2.plugin.PluginModule;
 
+/**
+ * 该模块定义了 MessageProcessor注册到 guice的逻辑
+ */
 public class MessageProcessorModule extends PluginModule {
     @Override
     protected void configure() {

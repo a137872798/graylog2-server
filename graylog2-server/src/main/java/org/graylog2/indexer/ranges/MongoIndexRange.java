@@ -30,6 +30,9 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 
+/**
+ * 简单的bean对象  表示一个时间段内写入到该索引的所有stream
+ */
 @AutoValue
 @WithBeanGetter
 @JsonAutoDetect

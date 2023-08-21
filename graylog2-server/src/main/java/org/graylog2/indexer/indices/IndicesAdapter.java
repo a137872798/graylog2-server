@@ -32,13 +32,32 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
+/**
+ * 暴露索引相关的api
+ */
 public interface IndicesAdapter {
+
+    /**
+     * 将索引从source移动到target    使用resultCallback处理结果
+     * @param source
+     * @param target
+     * @param resultCallback
+     */
     void move(String source, String target, Consumer<IndexMoveResult> resultCallback);
 
+    /**
+     * 删除某个索引
+     * @param indexName
+     */
     void delete(String indexName);
 
     Set<String> resolveAlias(String alias);
 
+    /**
+     * 创建索引
+     * @param indexName
+     * @param indexSettings  包含副本数和分片数信息
+     */
     void create(String indexName, IndexSettings indexSettings);
 
     /**
@@ -46,6 +65,8 @@ public interface IndicesAdapter {
      * @param indexName existing index name
      * @param mappingType target mapping type (e.g. message). Not relevant for ES7+ (will be simply ignored).
      * @param mapping field mappings
+     *
+     *                 索引的内容是由 mapping来描述的    这里更新mapping信息
      */
     void updateIndexMapping(@Nonnull String indexName, @Nonnull String mappingType, @Nonnull Map<String, Object> mapping);
 
@@ -54,12 +75,30 @@ public interface IndicesAdapter {
      * @param indexName existing index name
      * @param metaData  the new metadata
      * @param mergeExisting merge or overwrite existing metadata
+     *                      更新索引元数据
      */
     void updateIndexMetaData(@Nonnull String indexName, @Nonnull Map<String, Object> metaData, boolean mergeExisting);
+
+    /**
+     * 获取索引元数据
+     * @param indexName
+     * @return
+     */
     Map<String, Object> getIndexMetaData(@Nonnull String indexName);
 
+    /**
+     * 检测索引模板内容是否一致
+     * @param templateName
+     * @param template
+     * @return
+     */
     boolean ensureIndexTemplate(String templateName, Map<String, Object> template);
 
+    /**
+     * 检测模板是否存在
+     * @param templateName
+     * @return
+     */
     boolean indexTemplateExists(String templateName);
 
     Optional<DateTime> indexCreationDate(String index);

@@ -147,6 +147,10 @@ public class LocalKafkaJournal extends AbstractIdleService implements Journal {
     private final LogManager logManager;
     private final Log kafkaLog;
     private final File committedReadOffsetFile;
+
+    /**
+     * 表示一个提交的偏移量
+     */
     private final AtomicLong committedOffset = new AtomicLong(DEFAULT_COMMITTED_OFFSET);
     private final MetricRegistry metricRegistry;
     private final ScheduledExecutorService scheduler;
@@ -742,6 +746,7 @@ public class LocalKafkaJournal extends AbstractIdleService implements Journal {
      * highest offset as committed. A background job will write the last position to disk periodically.
      *
      * @param offset the offset of the latest committed message
+     *               更新偏移量
      */
     @Override
     public void markJournalOffsetCommitted(long offset) {

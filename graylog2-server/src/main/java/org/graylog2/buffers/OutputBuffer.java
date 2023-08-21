@@ -43,6 +43,10 @@ import static com.codahale.metrics.MetricRegistry.name;
 import static org.graylog2.shared.metrics.MetricUtils.constantGauge;
 import static org.graylog2.shared.metrics.MetricUtils.safelyRegister;
 
+/**
+ * Buffer 包含一个RingBuffer 并且开放了往其中插入数据的api
+ * 而该对象表示的是一个输出Buffer
+ */
 @Singleton
 public class OutputBuffer extends Buffer {
     private static final Logger LOG = LoggerFactory.getLogger(OutputBuffer.class);
@@ -80,6 +84,7 @@ public class OutputBuffer extends Buffer {
         LOG.info("Initialized OutputBuffer with ring size <{}> and wait strategy <{}>.",
                 ringBufferSize, waitStrategy.getClass().getSimpleName());
 
+        // 对接的是能够消费数据并输出的handler
         final OutputBufferProcessor[] processors = new OutputBufferProcessor[processorCount];
 
         for (int i = 0; i < processorCount; i++) {

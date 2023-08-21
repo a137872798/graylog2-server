@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 以流的形式访问某个对象
+ */
 public interface StreamService extends PersistedService {
     Stream create(Map<String, Object> fields);
 

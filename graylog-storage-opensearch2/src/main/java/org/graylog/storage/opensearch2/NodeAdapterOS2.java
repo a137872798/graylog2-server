@@ -26,6 +26,9 @@ import javax.inject.Inject;
 import java.util.Locale;
 import java.util.Optional;
 
+/**
+ * 使用 OpenSearcher
+ */
 public class NodeAdapterOS2 implements NodeAdapter {
     private final PlainJsonApi jsonApi;
 

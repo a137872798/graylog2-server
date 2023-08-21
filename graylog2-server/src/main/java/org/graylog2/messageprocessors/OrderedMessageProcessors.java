@@ -40,15 +40,27 @@ import java.util.concurrent.atomic.AtomicReference;
  * Represents the current MessageProcessor ordering in the system.
  *
  * The order is configurable by writing a new MessageProcessorOrder into the ClusterConfig
+ * 代表一组有序的消息处理器对象
  */
 public class OrderedMessageProcessors implements Iterable<MessageProcessor> {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrderedMessageProcessors.class);
 
+    /**
+     * 存储一组无序的消息处理器
+     */
     private final Set<MessageProcessor> processors;
+
+    /**
+     * 集群配置对象 简单来说封装了与mongodb交互的逻辑
+     */
     private final ClusterConfigService clusterConfigService;
     private final AtomicReference<List<MessageProcessor>> sortedProcessors =
             new AtomicReference<>(Collections.emptyList());
+
+    /**
+     * 通过名称排序
+     */
     private Ordering<String> classNameOrdering;
 
     @Inject
@@ -65,6 +77,9 @@ public class OrderedMessageProcessors implements Iterable<MessageProcessor> {
         sortProcessorChain();
     }
 
+    /**
+     * 对 MessageProcessor 进行排序
+     */
     private void sortProcessorChain() {
         final MessageProcessorsConfig config = clusterConfigService.get(MessageProcessorsConfig.class);
 

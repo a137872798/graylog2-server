@@ -270,12 +270,21 @@ public class PersistedServiceImpl implements PersistedService {
         }
 
         Map<String, Object> fields = Maps.newHashMap(o.getPersistedFields());
+        // 对字段进行转换
         fieldTransformations(fields);
 
         BasicDBObject dbo = new BasicDBObject(fields);
+        // 调用mongodb的api 将内容设置到内嵌字段中
         collection(model).update(new BasicDBObject("_id", new ObjectId(model.getId())), new BasicDBObject("$push", new BasicDBObject(key, dbo)));
     }
 
+    /**
+     * 移除某个内嵌字段 也是调用mongodbApi
+     * @param model
+     * @param key
+     * @param searchId
+     * @param <T>
+     */
     protected <T extends Persisted> void removeEmbedded(T model, String key, String searchId) {
         BasicDBObject aryQry = new BasicDBObject("id", searchId);
         BasicDBObject qry = new BasicDBObject("_id", new ObjectId(model.getId()));
@@ -296,6 +305,10 @@ public class PersistedServiceImpl implements PersistedService {
         collection(model).update(qry, update);
     }
 
+    /**
+     * 转换字段
+     * @param doc
+     */
     protected void fieldTransformations(Map<String, Object> doc) {
         for (Map.Entry<String, Object> x : doc.entrySet()) {
 

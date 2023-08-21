@@ -49,11 +49,17 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+/**
+ * 通过该对象与ES交互
+ */
 public class ElasticsearchClient {
     private static final Pattern invalidWriteTarget = Pattern.compile("no write index is defined for alias \\[(?<target>[\\w_]+)\\]");
 
     private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchClient.class);
 
+    /**
+     * 代表抽取出高级接口的客户端对象
+     */
     private final RestHighLevelClient client;
     private final boolean compressionEnabled;
     private final ObjectMapper objectMapper;

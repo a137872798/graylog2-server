@@ -94,6 +94,11 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkState;
 
+/**
+ * TCP传输层 底层借助了Netty框架
+ * 一个transport对应一个MessageInput对象
+ * 不同传输层只是解码器不一样 其他部分是一样的
+ */
 public abstract class AbstractTcpTransport extends NettyTransport {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractTcpTransport.class);
 
@@ -116,6 +121,8 @@ public abstract class AbstractTcpTransport extends NettyTransport {
     private static final Supplier<Set<String>> secureDefaultCiphers = Suppliers.memoize(AbstractTcpTransport::getSecureCipherSuites);
 
     private final ConnectionCounter connectionCounter;
+
+    // 用于记录连接数
     private final AtomicInteger connections;
     private final AtomicLong totalConnections;
 
@@ -123,6 +130,8 @@ public abstract class AbstractTcpTransport extends NettyTransport {
     protected final EventLoopGroup parentEventLoopGroup;
     private final NettyTransportConfiguration nettyTransportConfiguration;
     private final Set<String> enabledTLSProtocols;
+
+    // 当前端点引用的channel
     private final AtomicReference<Channel> channelReference;
 
     private final boolean tlsEnable;
@@ -133,6 +142,9 @@ public abstract class AbstractTcpTransport extends NettyTransport {
     private final String tlsClientAuth;
     private final boolean tcpKeepalive;
 
+    /**
+     * 所有端点收到的新连接都会加入到ChannelGroup中
+     */
     private ChannelGroup childChannels;
     protected EventLoopGroup childEventLoopGroup;
     private ServerBootstrap bootstrap;
@@ -150,6 +162,16 @@ public abstract class AbstractTcpTransport extends NettyTransport {
                     nettyTransportConfiguration, new TLSProtocolsConfiguration(graylogConfiguration.getEnabledTlsProtocols()));
     }
 
+    /**
+     * 使用该构造方法
+     * @param configuration
+     * @param throughputCounter
+     * @param localRegistry
+     * @param parentEventLoopGroup
+     * @param eventLoopGroupFactory
+     * @param nettyTransportConfiguration
+     * @param tlsConfiguration
+     */
     public AbstractTcpTransport(
             Configuration configuration,
             ThroughputCounter throughputCounter,
@@ -178,6 +200,8 @@ public abstract class AbstractTcpTransport extends NettyTransport {
         this.connections = new AtomicInteger();
         this.totalConnections = new AtomicLong();
         this.connectionCounter = new ConnectionCounter(connections, totalConnections);
+
+        // TODO 测量的先忽略
         this.localRegistry.register("open_connections", new Gauge<Integer>() {
             @Override
             public Integer getValue() {
@@ -196,7 +220,13 @@ public abstract class AbstractTcpTransport extends NettyTransport {
         return new File(configuration.getString(configKey, ""));
     }
 
+    /**
+     * 每个MessageInput 会变成一个TCP端点
+     * @param input
+     * @return
+     */
     protected ServerBootstrap getBootstrap(MessageInput input) {
+        // 产生该messageInput相关的一组handler
         final LinkedHashMap<String, Callable<? extends ChannelHandler>> parentHandlers = getChannelHandlers(input);
         final LinkedHashMap<String, Callable<? extends ChannelHandler>> childHandlers = getChildChannelHandlers(input);
 
@@ -219,6 +249,7 @@ public abstract class AbstractTcpTransport extends NettyTransport {
         try {
             bootstrap = getBootstrap(input);
             bootstrap.bind(socketAddress)
+                    // 也是打印日志的
                     .addListener(new InputLaunchListener(channelReference, input, getRecvBufferSize()))
                     .syncUninterruptibly();
         } catch (Exception e) {
@@ -253,29 +284,50 @@ public abstract class AbstractTcpTransport extends NettyTransport {
         bootstrap = null;
     }
 
+    /**
+     * 为新端点接收到的每个连接 设置子处理器
+     * @param input The {@link MessageInput} for which these child channel handlers are being added
+     * @return
+     */
     @Override
     protected LinkedHashMap<String, Callable<? extends ChannelHandler>> getChildChannelHandlers(MessageInput input) {
         final LinkedHashMap<String, Callable<? extends ChannelHandler>> handlers = new LinkedHashMap<>();
+
+        // transport共享同一个聚合器
         final CodecAggregator aggregator = getAggregator();
 
         handlers.put("channel-registration", () -> new ChannelRegistrationHandler(childChannels));
+        // 一些统计项相关的
         handlers.put("traffic-counter", () -> throughputCounter);
         handlers.put("connection-counter", () -> connectionCounter);
+
+        // TODO
         if (tlsEnable) {
             LOG.info("Enabled TLS for input {}. key-file=\"{}\" cert-file=\"{}\"", input.toIdentifier(), tlsKeyFile, tlsCertFile);
             handlers.put("tls", getSslHandlerCallable(input));
         }
+
+        // 追加一些自定义的handler
         handlers.putAll(getCustomChildChannelHandlers(input));
+
+        // 添加一个消息聚合器
         if (aggregator != null) {
             LOG.debug("Adding codec aggregator {} to channel pipeline", aggregator);
             handlers.put("codec-aggregator", () -> new ByteBufMessageAggregationHandler(aggregator, localRegistry));
         }
+
+        // transport的主要作用就是接收消息 并通过RawMessageHandler进行处理   而RawMessageHandler 会将收到的消息设置到RingBuffer
         handlers.put("rawmessage-handler", () -> new RawMessageHandler(input));
         handlers.put("exception-logger", () -> new ExceptionLoggingChannelHandler(input, LOG, this.tcpKeepalive));
 
         return handlers;
     }
 
+    /**
+     * TODO
+     * @param input
+     * @return
+     */
     private Callable<ChannelHandler> getSslHandlerCallable(MessageInput input) {
         final File certFile;
         final File keyFile;
@@ -458,6 +510,9 @@ public abstract class AbstractTcpTransport extends NettyTransport {
         }
     }
 
+    /**
+     * 也是打印日志的
+     */
     private static class InputLaunchListener implements ChannelFutureListener {
         private final AtomicReference<Channel> channelReference;
         private final MessageInput input;

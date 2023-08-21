@@ -28,8 +28,13 @@ import java.util.Map;
 /**
  * Representing the message type mapping in Elasticsearch. This is giving ES more
  * information about what the fields look like and how it should analyze them.
+ * 可以为消息索引产生一个模板   也就是在map中声明了各种信息
  */
 public abstract class IndexMapping implements IndexMappingTemplate {
+
+    /**
+     * 表示该索引是跟message相关的
+     */
     public static final String TYPE_MESSAGE = "message";
 
     @Override
@@ -37,12 +42,23 @@ public abstract class IndexMapping implements IndexMappingTemplate {
         return messageTemplate(indexPattern, indexSetConfig.indexAnalyzer(), order);
     }
 
+    /**
+     * 描述分词过程会使用到哪些分词器
+     * @return
+     */
     protected Map<String, Object> analyzerKeyword() {
         return ImmutableMap.of("analyzer_keyword", ImmutableMap.of(
                 "tokenizer", "keyword",
                 "filter", "lowercase"));
     }
 
+    /**
+     * 产生消息的索引模板
+     * @param template
+     * @param analyzer
+     * @param order
+     * @return
+     */
     public Map<String, Object> messageTemplate(final String template, final String analyzer, final int order) {
         final Map<String, Object> settings = Collections.singletonMap(
                 "analysis", Collections.singletonMap("analyzer", analyzerKeyword())
@@ -91,6 +107,11 @@ public abstract class IndexMapping implements IndexMappingTemplate {
 
     abstract Map<String, Object> dynamicStrings();
 
+    /**
+     *
+     * @param analyzer
+     * @return
+     */
     protected Map<String, Map<String, Object>> fieldProperties(String analyzer) {
         return ImmutableMap.<String, Map<String, Object>>builder()
                 .put("message", analyzedString(analyzer, false))
@@ -111,6 +132,13 @@ public abstract class IndexMapping implements IndexMappingTemplate {
     Map<String, Object> notAnalyzedString() {
         return ImmutableMap.of("type", "keyword");
     }
+
+    /**
+     * 代表要抽取哪些字段
+     * @param analyzer
+     * @param fieldData
+     * @return
+     */
     Map<String, Object> analyzedString(String analyzer, boolean fieldData) {
         return ImmutableMap.of(
                 "type", "text",

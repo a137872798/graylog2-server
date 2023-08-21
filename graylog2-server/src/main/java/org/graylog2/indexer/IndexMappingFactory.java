@@ -29,7 +29,15 @@ import static org.graylog2.shared.utilities.StringUtils.f;
 
 @Singleton
 public class IndexMappingFactory {
+
+    /**
+     * 通过该对象可以获取存储引擎的类型以及版本
+     */
     private final Node node;
+
+    /**
+     * 生成一个IndexMapping对象 可以生成索引模板   模板就是告知数据存储的样式
+     */
     private final Map<String, IndexTemplateProvider> providers;
 
     @Inject
@@ -38,6 +46,12 @@ public class IndexMappingFactory {
         this.providers = providers;
     }
 
+    /**
+     * 提供参数 产生模板
+     * @param indexSetConfig
+     * @return
+     * @throws IgnoreIndexTemplate
+     */
     @Nonnull
     public IndexMappingTemplate createIndexMapping(@Nonnull IndexSetConfig indexSetConfig)  throws IgnoreIndexTemplate {
         final SearchVersion elasticsearchVersion = node.getVersion()

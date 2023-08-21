@@ -18,6 +18,9 @@ package org.graylog2.plugin.messageprocessors;
 
 import org.graylog2.plugin.Messages;
 
+/**
+ * 消息处理器
+ */
 public interface MessageProcessor {
     interface Descriptor {
         String name();

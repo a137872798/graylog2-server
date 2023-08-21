@@ -22,6 +22,9 @@ import org.graylog2.storage.SearchVersion;
 
 import java.util.Optional;
 
+/**
+ * 暴露获取节点的数据存储引擎 以及其版本号
+ */
 public interface NodeAdapter {
     Optional<SearchVersion> version();
 

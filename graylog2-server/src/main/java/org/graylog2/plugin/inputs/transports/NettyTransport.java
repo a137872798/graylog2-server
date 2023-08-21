@@ -47,6 +47,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+/**
+ * 借助netty框架的数据传输能力
+ */
 public abstract class NettyTransport implements Transport {
 
     public static final String CK_BIND_ADDRESS = "bind_address";
@@ -57,10 +60,14 @@ public abstract class NettyTransport implements Transport {
 
     private static final Logger log = LoggerFactory.getLogger(NettyTransport.class);
 
+    /**
+     * 该对象负责生成netty的事件循环组
+     */
     protected final EventLoopGroupFactory eventLoopGroupFactory;
     protected final MetricRegistry localRegistry;
 
     protected final InetSocketAddress socketAddress;
+    // TODO
     protected final ThroughputCounter throughputCounter;
     protected final int workerThreads;
     private final int recvBufferSize;
@@ -92,6 +99,11 @@ public abstract class NettyTransport implements Transport {
         localRegistry.registerAll(MetricSets.of(throughputCounter.gauges()));
     }
 
+    /**
+     * 描述在收到一个新的客户端连接时 触发的回调
+     * @param handlerList
+     * @return
+     */
     protected ChannelInitializer<? extends Channel> getChannelInitializer(final LinkedHashMap<String, Callable<? extends ChannelHandler>> handlerList) {
         return new ChannelInitializer<Channel>() {
             @Override
@@ -99,7 +111,7 @@ public abstract class NettyTransport implements Transport {
                 final ChannelPipeline p = ch.pipeline();
                 Map.Entry<String, Callable<? extends ChannelHandler>> postentry = null;
                 for (final Map.Entry<String, Callable<? extends ChannelHandler>> entry : handlerList.entrySet()) {
-                    // Handle exceptions at the top of the (bottom-up evaluated) pipeline
+                    // Handle exceptions at the top of the (bottom-up evaluated) pipeline  把这个放在最后
                     if (entry.getKey().equals("exception-logger")) {
                         postentry = entry;
                     } else {
@@ -140,10 +152,12 @@ public abstract class NettyTransport implements Transport {
      *
      * @param input The {@link MessageInput} for which these channel handlers are being added
      * @return list of initial {@link ChannelHandler channel handlers} to add to the Netty {@link ChannelPipeline channel pipeline}
+     * 产生用于接收原始数据流的MessageInput 关联的handler
      */
     protected LinkedHashMap<String, Callable<? extends ChannelHandler>> getChannelHandlers(final MessageInput input) {
         LinkedHashMap<String, Callable<? extends ChannelHandler>> handlerList = new LinkedHashMap<>();
 
+        // 都是打印日志
         handlerList.put("exception-logger", () -> new ExceptionLoggingChannelHandler(input, log));
         handlerList.put("packet-meta-dumper", () -> new PacketInformationDumper(input));
         handlerList.put("output-failure-logger", () -> PromiseFailureHandler.INSTANCE);

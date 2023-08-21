@@ -205,7 +205,6 @@ public abstract class MessageInput implements Stoppable {
     }
 
     /**
-     * 不断的处理 RawMessage 后 消息会堆积在buffer中  之后通过该方法完成发送
      * @param buffer
      * @param inputFailureRecorder
      * @throws MisfireException
@@ -219,7 +218,7 @@ public abstract class MessageInput implements Stoppable {
             // 为传输层设置消息累加器
             transport.setMessageAggregator(codec.getAggregator());
 
-            // 通过传输层发送消息
+            // 将本对象绑定到一个端口上 这样就可以接收其他地方传来的原始数据 并设置到InputBuffer中, 然后数据会被异步处理
             transport.launch(this, inputFailureRecorder);
         } catch (Exception e) {
             inputBuffer = null;

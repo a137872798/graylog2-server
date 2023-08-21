@@ -21,6 +21,9 @@ import org.graylog2.plugin.database.Persisted;
 
 import java.util.Map;
 
+/**
+ * Stream规则对象 也是一个bean对象
+ */
 @JsonAutoDetect
 public interface StreamRule extends Persisted {
     @Override

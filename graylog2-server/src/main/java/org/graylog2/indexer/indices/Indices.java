@@ -58,16 +58,34 @@ import java.util.stream.Collectors;
 import static org.graylog2.audit.AuditEventTypes.ES_INDEX_CREATE;
 import static org.graylog2.shared.utilities.StringUtils.f;
 
+/**
+ * 代表一组索引
+ */
 @Singleton
 public class Indices {
     private static final Logger LOG = LoggerFactory.getLogger(Indices.class);
     public static final String REOPENED_ALIAS_SUFFIX = "_reopened";
 
+    /**
+     * 该对象用于生成 template 描述了数据的存储格式
+     */
     private final IndexMappingFactory indexMappingFactory;
+
+    /**
+     * 描述索引所在节点
+     */
     private final NodeId nodeId;
+
+    /**
+     * NOOP
+     */
     private final AuditEventSender auditEventSender;
     @SuppressWarnings("UnstableApiUsage")
     private final EventBus eventBus;
+
+    /**
+     * 开放索引api 底层对接存储引擎
+     */
     private final IndicesAdapter indicesAdapter;
 
     @Inject

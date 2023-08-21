@@ -22,6 +22,9 @@ import io.netty.handler.timeout.ReadTimeoutException;
 import org.graylog2.plugin.inputs.MessageInput;
 import org.slf4j.Logger;
 
+/**
+ * 捕获到异常时打印日志
+ */
 public class ExceptionLoggingChannelHandler extends ChannelInboundHandlerAdapter {
     private final MessageInput input;
     private final Logger logger;

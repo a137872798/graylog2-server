@@ -19,6 +19,9 @@ package org.graylog2.indexer.indices;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.google.auto.value.AutoValue;
 
+/**
+ * 表示将索引从一个地方移动到另一个地方
+ */
 @AutoValue
 @JsonAutoDetect
 public abstract class IndexMoveResult {

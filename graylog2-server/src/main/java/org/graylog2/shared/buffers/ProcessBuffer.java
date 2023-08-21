@@ -46,11 +46,17 @@ import static com.codahale.metrics.MetricRegistry.name;
 import static org.graylog2.shared.metrics.MetricUtils.constantGauge;
 import static org.graylog2.shared.metrics.MetricUtils.safelyRegister;
 
+/**
+ * Buffer 包含了将数据插入到RingBuffer的逻辑
+ * 这里则是包含了处理逻辑
+ */
 @Singleton
 public class ProcessBuffer extends Buffer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcessBuffer.class);
 
     private final Meter incomingMessages;
+
+    // 一组处理器 包含处理事件的逻辑
     private final ProcessBufferProcessor[] processors;
 
     @Inject
@@ -74,6 +80,8 @@ public class ProcessBuffer extends Buffer {
         safelyRegister(metricRegistry, GlobalMetricNames.PROCESS_BUFFER_SIZE, constantGauge(ringBufferSize));
 
         final WaitStrategy waitStrategy = getWaitStrategy(waitStrategyName, "processor_wait_strategy");
+
+        // 这个RingBuffer是注册到上层的
         final Disruptor<MessageEvent> disruptor = new Disruptor<>(
                 MessageEvent.EVENT_FACTORY,
                 ringBufferSize,

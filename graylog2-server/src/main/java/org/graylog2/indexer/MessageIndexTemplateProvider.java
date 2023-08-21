@@ -25,6 +25,9 @@ import static org.graylog2.storage.SearchVersion.Distribution.DATANODE;
 import static org.graylog2.storage.SearchVersion.Distribution.ELASTICSEARCH;
 import static org.graylog2.storage.SearchVersion.Distribution.OPENSEARCH;
 
+/**
+ * 根据不同的版本 索引映射对象 可以产生模板 (其实就是一个map对象 里面包含了各种信息)
+ */
 public class MessageIndexTemplateProvider implements IndexTemplateProvider {
 
     public static final String MESSAGE_TEMPLATE_TYPE = "messages";

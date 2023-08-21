@@ -21,6 +21,9 @@ import org.joda.time.DateTime;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * 应该是指一个时间范围内收到的所有stream  每个stream就是一条数据咯
+ */
 public interface IndexRange {
     String FIELD_TOOK_MS = "took_ms";
     String FIELD_CALCULATED_AT = "calculated_at";

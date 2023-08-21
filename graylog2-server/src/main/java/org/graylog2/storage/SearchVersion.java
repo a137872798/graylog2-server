@@ -26,6 +26,9 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
 
+/**
+ * 描述数据存储的地方以及版本号
+ */
 @AutoValue
 public abstract class SearchVersion {
 

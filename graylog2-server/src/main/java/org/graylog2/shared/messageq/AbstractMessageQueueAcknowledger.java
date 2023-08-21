@@ -22,6 +22,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+/**
+ * 消息队列确认器 骨架类
+ * @param <T>
+ */
 public abstract class AbstractMessageQueueAcknowledger<T> implements MessageQueueAcknowledger {
     private static final Logger log = LoggerFactory.getLogger(AbstractMessageQueueAcknowledger.class);
 
@@ -54,6 +58,11 @@ public abstract class AbstractMessageQueueAcknowledger<T> implements MessageQueu
 
     protected abstract void doAcknowledge(T queueId);
 
+    /**
+     * 判断提交的类型是否匹配
+     * @param object
+     * @return
+     */
     protected boolean isValidMessageQueueId(Object object) {
         if (queueIdClass.isInstance(object)) {
             return true;

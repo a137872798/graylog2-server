@@ -41,13 +41,21 @@ import static com.codahale.metrics.MetricRegistry.name;
  * 2. To decouple failure producers from failure consumers.
  *
  * The capacity of the underlying queue is controlled by {@link Configuration#getFailureHandlingQueueCapacity()}}
+ * 存储处理失败事件的队列
  */
 @Singleton
 class FailureSubmissionQueue {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    /**
+     * FailureBatch 对应一批失败消息
+     */
     private final BlockingQueue<FailureBatch> queue;
+
+    /**
+     * 一些配置信息
+     */
     private final Configuration configuration;
     private final Meter submittedFailureBatches;
     private final Meter submittedFailures;
@@ -72,6 +80,7 @@ class FailureSubmissionQueue {
     /**
      * Submits a failure batch for handling. If the underlying queue is full,
      * the call will block until the queue is ready to accept new batches.
+     * 将一个错误信息添加到队列中
      */
     void submitBlocking(FailureBatch batch) throws InterruptedException {
         queue.put(batch);
@@ -97,6 +106,7 @@ class FailureSubmissionQueue {
     /**
      * @return one batch from the queue. If the queue is empty,
      * waits for a batch to become available.
+     * 获取错误信息
      */
     FailureBatch consumeBlocking() throws InterruptedException {
         final FailureBatch fb = queue.take();

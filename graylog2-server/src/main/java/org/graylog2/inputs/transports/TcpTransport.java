@@ -73,6 +73,7 @@ public class TcpTransport extends AbstractTcpTransport {
     protected LinkedHashMap<String, Callable<? extends ChannelHandler>> getCustomChildChannelHandlers(MessageInput input) {
         final LinkedHashMap<String, Callable<? extends ChannelHandler>> childChannelHandlers = new LinkedHashMap<>();
 
+        // 设置自己的解码器
         childChannelHandlers.put("framer", () -> new LenientDelimiterBasedFrameDecoder(maxFrameLength, delimiter));
         childChannelHandlers.putAll(super.getCustomChildChannelHandlers(input));
 

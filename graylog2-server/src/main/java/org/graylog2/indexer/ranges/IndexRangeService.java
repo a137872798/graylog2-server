@@ -23,6 +23,9 @@ import org.mongojack.WriteResult;
 
 import java.util.SortedSet;
 
+/**
+ * 描述crud接口
+ */
 public interface IndexRangeService {
     IndexRange get(String index) throws NotFoundException;
 

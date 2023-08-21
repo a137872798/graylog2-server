@@ -21,6 +21,9 @@ import org.graylog2.storage.SearchVersion;
 
 import javax.annotation.Nonnull;
 
+/**
+ * 根据指定的版本 以及 索引集配置 生成索引
+ */
 public interface IndexTemplateProvider {
 
     @Nonnull

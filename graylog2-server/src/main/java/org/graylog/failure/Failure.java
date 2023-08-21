@@ -25,16 +25,19 @@ import javax.annotation.Nullable;
 /**
  * A failure occurring at different stages of message processing
  * (e.g. pipeline processing, extraction, Elasticsearch indexing)
+ * 表示一个失败信息
  */
 public interface Failure {
 
     /**
      * Returns a type of this failure
+     * 失败类型  表示在生成索引时失败 还是处理时失败
      */
     FailureType failureType();
 
     /**
      * Returns a cause of this failure
+     * 描述错误原因
      */
     FailureCause failureCause();
 
@@ -59,6 +62,7 @@ public interface Failure {
 
     /**
      * Returns a failed message
+     * 返回处理失败的那条消息
      */
     Indexable failedMessage();
 

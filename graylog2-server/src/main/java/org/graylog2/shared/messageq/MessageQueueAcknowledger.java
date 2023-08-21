@@ -27,6 +27,9 @@ import java.util.List;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 表示一个消息队列确认器
+ */
 public interface MessageQueueAcknowledger {
 
     void acknowledge(@Nullable Object messageQueueId);

@@ -29,6 +29,9 @@ import javax.inject.Singleton;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * 将提供Stream的对象注入到guice中
+ */
 @Singleton
 public class DefaultStreamProvider implements Provider<Stream> {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultStreamProvider.class);

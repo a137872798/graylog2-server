@@ -25,6 +25,7 @@ import org.graylog2.plugin.inputs.MisfireException;
 /**
  * Newer version of the {@link ThrottleableTransport} which launches
  * with an {@link InputFailureRecorder}
+ * 包含流量控制逻辑的传输层
  */
 public abstract class ThrottleableTransport2 extends ThrottleableTransport {
 

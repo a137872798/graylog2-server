@@ -23,6 +23,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 用于记录连接数
+ */
 @ChannelHandler.Sharable
 public class ConnectionCounter extends ChannelInboundHandlerAdapter {
     private final AtomicInteger connections;

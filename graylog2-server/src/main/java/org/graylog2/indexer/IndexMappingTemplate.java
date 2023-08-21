@@ -22,6 +22,7 @@ import java.util.Map;
 
 /**
  * Implementing classes provide an index mapping template representation that can be stored in Elasticsearch.
+ * 产生一个索引的模板
  */
 public interface IndexMappingTemplate {
     /**

@@ -28,6 +28,9 @@ import org.mongojack.ObjectId;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotEmpty;
 
+/**
+ * 表示一个集群配置对象
+ */
 @AutoValue
 @WithBeanGetter
 public abstract class ClusterConfig {

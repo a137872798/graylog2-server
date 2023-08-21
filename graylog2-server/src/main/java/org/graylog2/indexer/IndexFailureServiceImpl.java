@@ -31,13 +31,19 @@ import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 将失败信息都存储在mongodb中
+ * PersistedServiceImpl 已经提供了与mongodb交互的基本api
+ */
 @Singleton
 public class IndexFailureServiceImpl extends PersistedServiceImpl implements IndexFailureService {
+
     @Inject
     public IndexFailureServiceImpl(MongoConnection mongoConnection) {
         super(mongoConnection);
 
         // Make sure that the index failures collection is always created capped.
+        // 通过注解 获取到collection名
         final String collectionName = IndexFailureImpl.class.getAnnotation(DbEntity.class).collection();
         if (!mongoConnection.getDatabase().collectionExists(collectionName)) {
             final DBObject options = BasicDBObjectBuilder.start()
@@ -52,6 +58,12 @@ public class IndexFailureServiceImpl extends PersistedServiceImpl implements Ind
         }
     }
 
+    /**
+     * 从 mongodb 中还原出 IndexFailure
+     * @param limit
+     * @param offset
+     * @return
+     */
     @Override
     public List<IndexFailure> all(int limit, int offset) {
         final DBObject sort = new BasicDBObject("$natural", -1);

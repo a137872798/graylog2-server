@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * 索引集服务
+ */
 public interface IndexSetService {
     /**
      * Retrieve index set with the given ID.

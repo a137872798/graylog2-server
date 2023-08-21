@@ -35,13 +35,22 @@ import java.util.stream.Collectors;
  * A supplementary service layer, which is aimed to simplify failure
  * submission for the calling code. Apart from the <b>input transformation</b>,
  * it also encapsulates integration with <b>the failure handling configuration</b>.
+ *
+ * 当失败时通过该服务提交一些信息
  */
 @Singleton
 public class FailureSubmissionService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    /**
+     * 该对象用于存储 FailureBatch对象
+     */
     private final FailureSubmissionQueue failureSubmissionQueue;
+
+    /**
+     * 包含2个配置属性
+     */
     private final FailureHandlingConfiguration failureHandlingConfiguration;
 
     @Inject
@@ -106,6 +115,8 @@ public class FailureSubmissionService {
 
         return failureHandlingConfiguration.keepFailedMessageDuplicate();
     }
+
+    // 反正submit方法就是将错误加入到队列
 
     private void submitProcessingFailure(Message failedMessage, Message.ProcessingError processingError) {
         try {

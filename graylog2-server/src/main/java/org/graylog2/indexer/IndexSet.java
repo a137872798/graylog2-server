@@ -28,6 +28,9 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 索引集对象   索引集配置提示了如何使用索引
+ */
 public interface IndexSet extends Comparable<IndexSet> {
     /**
      * Returns an array with all managed indices in this index set.
@@ -35,6 +38,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      * Example: {@code ["graylog_0", "graylog_1", "graylog_2"]}
      *
      * @return array of index names
+     * 获取索引集下的所有索引
      */
     String[] getManagedIndices();
 
@@ -46,6 +50,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      * Example: {@code "graylog_deflector"}
      *
      * @return the write index alias name
+     * 获取写入索引   写入索引总是指向最新的索引
      */
     String getWriteIndexAlias();
 
@@ -57,6 +62,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      * Example: {@code "graylog_*"}
      *
      * @return the index wildcard
+     * 返回索引通配符
      */
     String getIndexWildcard();
 
@@ -67,6 +73,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      *
      * @return the newest index
      * @throws NoTargetIndexException if there are no indices in this index set yet
+     * 获取最新的索引
      */
     String getNewestIndex() throws NoTargetIndexException;
 
@@ -79,6 +86,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      *
      * @return the active write index
      * @throws TooManyAliasesException if the write index alias points to more than one index
+     * 获取活跃的写入索引
      */
     @Nullable
     String getActiveWriteIndex() throws TooManyAliasesException;
@@ -91,6 +99,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      * Example: {@code {graylog_0=[], graylog_1=[], graylog_2=[graylog_deflector}}
      *
      * @return map of index names to index aliases
+     * 获取索引集中每个索引的别名
      */
     Map<String, Set<String>> getAllIndexAliases();
 
@@ -107,6 +116,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      * Checks if the write index alias exists.
      *
      * @return true if the write index alias exists, false if not
+     * 判断写入索引别名是否存在
      */
     boolean isUp();
 
@@ -115,6 +125,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      *
      * @param index index name to check
      * @return true if given index name is the write index alias, false if not
+     * 检查传入的是否是写入索引名
      */
     boolean isWriteIndexAlias(String index);
 
@@ -128,11 +139,13 @@ public interface IndexSet extends Comparable<IndexSet> {
 
     /**
      * Prepares this index set to receive new messages.
+     * 准备好索引集去接收新消息  也就是说stream，索引集 都要提前准备好
      */
     void setUp();
 
     /**
      * Creates a new index and points the write index alias to it.
+     * 创建新索引 并将索引别名指向它
      */
     void cycle();
 
@@ -142,6 +155,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      * Can be used to fix the aliases in this index set when a {@link TooManyAliasesException} has been thrown.
      *
      * @param indices list of indices where the index alias points to
+     *                确保别名仅指向最新索引
      */
     void cleanupAliases(Set<String> indices);
 
@@ -160,6 +174,7 @@ public interface IndexSet extends Comparable<IndexSet> {
      *
      * @param index index name
      * @return a filled {@link Optional} with the extracted index number, an empty one if the number couldn't be parsed
+     * 从索引名中抽取出编码
      */
     Optional<Integer> extractIndexNumber(String index);
 

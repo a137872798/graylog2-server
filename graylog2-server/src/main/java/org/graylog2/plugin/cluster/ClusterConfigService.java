@@ -22,6 +22,7 @@ import java.util.Set;
 
 /**
  * Service to save and retrieve cluster configuration beans.
+ * 集群配置服务
  */
 public interface ClusterConfigService {
     /**
@@ -30,9 +31,17 @@ public interface ClusterConfigService {
      * @param type The {@link Class} of the Java configuration bean to retrieve.
      * @param <T>  The type of the Java configuration bean.
      * @return An instance of the requested type or {@code null} if it couldn't be retrieved.
+     * 从集群配置中检索目标类
      */
     <T> T get(Class<T> type);
 
+    /**
+     * 提取负载的数据
+     * @param payload
+     * @param type
+     * @return
+     * @param <T>
+     */
     <T> T extractPayload(Object payload, Class<T> type);
 
     /**
@@ -42,6 +51,7 @@ public interface ClusterConfigService {
      * @param type The {@link Class} of the Java configuration bean to retrieve.
      * @param <T>  The type of the Java configuration bean.
      * @return An instance of the requested type or {@code null} if it couldn't be retrieved.
+     * 从集群配置中 通过key检索某个类
      */
     <T> T get(String key, Class<T> type);
 
@@ -50,6 +60,7 @@ public interface ClusterConfigService {
      *
      * @param key The key/type that is used to find the cluster config object in the database.
      * @return An instance of the raw persisted Java class or {@code null} if it couldn't be retrieved.
+     * 通过key 检索配置类
      */
     ClusterConfig getRaw(Class<?> key);
 
@@ -69,6 +80,7 @@ public interface ClusterConfigService {
      * @param key     The key that is used to write the cluster config object to the database.
      * @param payload The object to write to the cluster configuration. Must be serializable by Jackson!
      * @param <T>     The type of the Java configuration bean.
+     *           将某个配置值写入到一个集群配置对象中
      */
     <T> void write(String key, T payload);
 

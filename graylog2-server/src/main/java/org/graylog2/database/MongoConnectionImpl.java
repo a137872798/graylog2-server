@@ -35,6 +35,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 
 /**
  * MongoDB connection singleton
+ * 表示与mongodb的一个连接对象 或者说client
  */
 @Singleton
 public class MongoConnectionImpl implements MongoConnection {

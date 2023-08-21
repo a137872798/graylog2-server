@@ -26,6 +26,9 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 表示一个消息队列提交确认器
+ */
 @Singleton
 public class LocalKafkaMessageQueueAcknowledger extends AbstractMessageQueueAcknowledger<Long> {
     private final LocalKafkaJournal kafkaJournal;
@@ -50,6 +53,10 @@ public class LocalKafkaMessageQueueAcknowledger extends AbstractMessageQueueAckn
         metrics.acknowledgedMessages().mark(messages.size());
     }
 
+    /**
+     * 提交偏移量
+     * @param queueId
+     */
     @Override
     protected void doAcknowledge(Long queueId) {
         kafkaJournal.markJournalOffsetCommitted(queueId);

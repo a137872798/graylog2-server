@@ -26,6 +26,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Output 也被看作一种实体   OutputServiceImpl 也是提供CRUD逻辑
+ */
 @ImplementedBy(OutputServiceImpl.class)
 public interface OutputService {
     Output load(String streamOutputId) throws NotFoundException;

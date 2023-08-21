@@ -46,6 +46,9 @@ import java.util.Optional;
 import static com.codahale.metrics.MetricRegistry.name;
 import static com.google.common.base.Strings.isNullOrEmpty;
 
+/**
+ * 表示如何处理RingBuffer的数据 (从MessageInput转移到第二层Buffer后使用的处理器)
+ */
 public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
     private static final Logger LOG = LoggerFactory.getLogger(ProcessBufferProcessor.class);
 
@@ -53,18 +56,49 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
 
     private final Timer processTime;
     private final Meter outgoingMessages;
+
+    /**
+     * 表示一组被排序的processor对象
+     */
     private final OrderedMessageProcessors orderedMessageProcessors;
 
+    /**
+     * 当数据被设置到该buffer后  会有专门的handler处理数据 并发送到下游
+     */
     private final OutputBuffer outputBuffer;
+    /**
+     * 用于统计数据
+     */
     private final ProcessingStatusRecorder processingStatusRecorder;
     private final ULID ulid;
+    /**
+     * 用于为消息生成唯一id
+     */
     private final MessageULIDGenerator messageULIDGenerator;
+    /**
+     * 为原始消息解码
+     */
     private final DecodingProcessor decodingProcessor;
     private final Provider<Stream> defaultStreamProvider;
+    /**
+     * 处理失败时 提交的服务
+     */
     private final FailureSubmissionService failureSubmissionService;
     private volatile Message currentMessage;
 
-    @AssistedInject
+    /**
+     *
+     * @param metricRegistry
+     * @param orderedMessageProcessors
+     * @param outputBuffer
+     * @param processingStatusRecorder
+     * @param ulid
+     * @param messageULIDGenerator
+     * @param decodingProcessor
+     * @param defaultStreamProvider   会关联到 DefaultStreamProvider 上
+     * @param failureSubmissionService
+     */
+    @AssistedInject   // 这个注解的作用是 除了携带@Assisted注解的参数需要显式传入外 其他参数由guice进行辅助注入
     public ProcessBufferProcessor(MetricRegistry metricRegistry,
                                   OrderedMessageProcessors orderedMessageProcessors,
                                   OutputBuffer outputBuffer,
@@ -89,14 +123,21 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
         currentMessage = null;
     }
 
+    /**
+     * 当收到RingBuffer的新事件时 触发该方法
+     * @param event
+     * @throws Exception
+     */
     @Override
     public void onEvent(MessageEvent event) throws Exception {
         try {
             // Decode the RawMessage to a Message object. The DecodingProcessor used to be a separate handler in the
             // ProcessBuffer. Due to performance problems discovered during 1.0.0 testing, we decided to move this here.
             // TODO The DecodingProcessor does not need to be a EventHandler. We decided to do it like this to keep the change as small as possible for 1.0.0.
+            // 先通过该对象解码原始消息
             decodingProcessor.onEvent(event, 0L, false);
 
+            // 根据解码出来是单条消息还是多条消息 走不同分支
             if (event.isSingleMessage()) {
                 dispatchMessage(event.getMessage());
             } else {
@@ -119,7 +160,12 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
         return Optional.ofNullable(currentMessage);
     }
 
+    /**
+     * 分发消息
+     * @param msg
+     */
     private void dispatchMessage(final Message msg) {
+        // 设置当前消息
         currentMessage = msg;
         incomingMessages.mark();
 
@@ -143,6 +189,7 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
                 LOG.warn("Unable to process message <{}>: {}", msg.getId(), e);
             }
 
+            // 失败时提交错误信息
             failureSubmissionService.submitUnknownProcessingError(msg, String.format(Locale.ENGLISH,
                     "Unable to process message <%s>: %s",
                     msg.getId(), e));
@@ -153,6 +200,10 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
         }
     }
 
+    /**
+     * 如何处理消息
+     * @param msg
+     */
     private void handleMessage(@Nonnull Message msg) {
         msg.addStream(defaultStreamProvider.get());
         Messages messages = msg;

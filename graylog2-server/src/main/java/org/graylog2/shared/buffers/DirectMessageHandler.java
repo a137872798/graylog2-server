@@ -22,6 +22,9 @@ import org.graylog2.system.processing.ProcessingStatusRecorder;
 
 import javax.inject.Inject;
 
+/**
+ * 描述如何直接处理从环形缓冲区收到的原始消息
+ */
 class DirectMessageHandler implements WorkHandler<RawMessageEvent> {
 
     private final ProcessBuffer processBuffer;
@@ -37,6 +40,7 @@ class DirectMessageHandler implements WorkHandler<RawMessageEvent> {
     @Override
     public void onEvent(RawMessageEvent event) throws Exception {
         final RawMessage rawMessage = event.getRawMessage();
+        // 存储到另一个容器 也是异步处理
         processBuffer.insertBlocking(rawMessage);
         if (rawMessage != null) {
             processingStatusRecorder.updateIngestReceiveTime(rawMessage.getTimestamp());

@@ -43,9 +43,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Output 被看作一种实体  也是需要CRUD接口
+ */
 public class OutputServiceImpl implements OutputService {
+
+    /**
+     * 该集合会将数据变成json格式
+     */
     private final JacksonDBCollection<OutputImpl, String> coll;
     private final DBCollection dbCollection;
+    /**
+     * Stream 也是一个对象
+     */
     private final StreamService streamService;
     private final ClusterEventBus clusterEventBus;
 
@@ -56,6 +66,7 @@ public class OutputServiceImpl implements OutputService {
                              ClusterEventBus clusterEventBus) {
         this.streamService = streamService;
         final String collectionName = OutputImpl.class.getAnnotation(DbEntity.class).collection();
+        // 获取该连接
         this.dbCollection = mongoConnection.getDatabase().getCollection(collectionName);
         this.coll = JacksonDBCollection.wrap(dbCollection, OutputImpl.class, String.class, mapperProvider.get());
         this.clusterEventBus = clusterEventBus;

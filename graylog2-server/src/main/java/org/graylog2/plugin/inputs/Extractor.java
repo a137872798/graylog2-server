@@ -431,6 +431,10 @@ public abstract class Extractor implements EmbeddedPersistable {
         return conditionType;
     }
 
+    /**
+     * 代表抽取器被存储到mongodb时需要保存的字段
+     * @return
+     */
     @Override
     public Map<String, Object> getPersistedFields() {
         return ImmutableMap.<String, Object>builder()

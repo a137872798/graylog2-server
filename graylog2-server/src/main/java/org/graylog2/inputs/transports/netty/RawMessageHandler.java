@@ -27,9 +27,13 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
+/**
+ * 底层使用netty作为网络通信框架 并接收原始消息
+ */
 public class RawMessageHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private static final Logger LOG = LoggerFactory.getLogger(NettyTransport.class);
 
+    // 对应的是同一个MessageInput对象 当囤积到一定量的数据后 通过transport进行发送
     private final MessageInput input;
 
     public RawMessageHandler(MessageInput input) {

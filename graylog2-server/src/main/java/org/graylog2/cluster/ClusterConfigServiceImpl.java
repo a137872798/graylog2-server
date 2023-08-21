@@ -45,16 +45,33 @@ import java.util.Set;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * 集群配置对象
+ */
 public class ClusterConfigServiceImpl implements ClusterConfigService {
     @VisibleForTesting
     static final String COLLECTION_NAME = "cluster_config";
     private static final Logger LOG = LoggerFactory.getLogger(ClusterConfigServiceImpl.class);
+    /**
+     * 看来集群配置存储在 mongodb中 (集群中各节点连接到同一个mongodb(集群))
+     */
     private final JacksonDBCollection<ClusterConfig, String> dbCollection;
+    /**
+     * 本节点id
+     */
     private final NodeId nodeId;
     private final ObjectMapper objectMapper;
     private final ChainingClassLoader chainingClassLoader;
     private final EventBus clusterEventBus;
 
+    /**
+     *
+     * @param mapperProvider
+     * @param mongoConnection  表示一个mongodb客户端 
+     * @param nodeId
+     * @param chainingClassLoader
+     * @param clusterEventBus
+     */
     @Inject
     public ClusterConfigServiceImpl(final MongoJackObjectMapperProvider mapperProvider,
                                     final MongoConnection mongoConnection,
