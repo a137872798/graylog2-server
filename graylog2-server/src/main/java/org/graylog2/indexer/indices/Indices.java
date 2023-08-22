@@ -80,6 +80,7 @@ public class Indices {
      * NOOP
      */
     private final AuditEventSender auditEventSender;
+
     @SuppressWarnings("UnstableApiUsage")
     private final EventBus eventBus;
 
@@ -101,6 +102,11 @@ public class Indices {
         this.indicesAdapter = indicesAdapter;
     }
 
+    /**
+     * 返回这些索引的 block 信息
+     * @param indices
+     * @return
+     */
     public IndicesBlockStatus getIndicesBlocksStatus(final List<String> indices) {
         if (indices == null || indices.isEmpty()) {
             return new IndicesBlockStatus();
@@ -165,6 +171,7 @@ public class Indices {
 
     /**
      * Returns index names and their aliases. This only returns indices which actually have an alias.
+     * 查找满足正则的所有索引 以及他们的别名
      */
     @NotNull
     public Map<String, Set<String>> getIndexNamesAndAliases(String indexPattern) {
@@ -184,6 +191,10 @@ public class Indices {
         return indicesAdapter.resolveAlias(alias);
     }
 
+    /**
+     * 检测模板是否已经存在
+     * @param indexSet
+     */
     public void ensureIndexTemplate(IndexSet indexSet) {
         final IndexSetConfig indexSetConfig = indexSet.getConfig();
         final String templateName = indexSetConfig.indexTemplateName();

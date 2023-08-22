@@ -21,6 +21,9 @@ import org.joda.time.DateTime;
 
 import static com.google.common.base.Preconditions.checkState;
 
+/**
+ * 描述一些系统级别任务
+ */
 public abstract class SystemJob {
 
     // Known types that can be resolved in the SystemJobFactory.

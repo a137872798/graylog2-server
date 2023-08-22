@@ -65,6 +65,11 @@ public class EntityOwnershipService {
         registerNewEntity(grn, user);
     }
 
+    /**
+     * 将stream 与 user绑定起来
+     * @param id
+     * @param user
+     */
     public void registerNewStream(String id, User user) {
         final GRN grn = grnRegistry.newGRN(GRNTypes.STREAM, id);
         registerNewEntity(grn, user);
@@ -95,6 +100,10 @@ public class EntityOwnershipService {
                 .build(), user);
     }
 
+    /**
+     * 不再维护该stream的所有权关系
+     * @param id
+     */
     public void unregisterStream(String id) {
         removeGrantsForTarget(grnRegistry.newGRN(GRNTypes.STREAM, id));
     }

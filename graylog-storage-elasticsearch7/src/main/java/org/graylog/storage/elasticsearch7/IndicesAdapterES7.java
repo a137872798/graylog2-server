@@ -104,7 +104,10 @@ import static org.graylog.storage.elasticsearch7.ElasticsearchClient.withTimeout
  */
 public class IndicesAdapterES7 implements IndicesAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(IndicesAdapterES7.class);
+
     private final ElasticsearchClient client;
+
+    // 将不同维度的接口抽象成api对象
     private final StatsApi statsApi;
     private final CatApi catApi;
     private final ClusterStateApi clusterStateApi;

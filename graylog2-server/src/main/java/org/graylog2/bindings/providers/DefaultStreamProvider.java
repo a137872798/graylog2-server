@@ -36,6 +36,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DefaultStreamProvider implements Provider<Stream> {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultStreamProvider.class);
 
+    /**
+     * 该对象可以创建stream 以及查询stream相关的属性
+     */
     private final StreamService service;
 
     private AtomicReference<Stream> sharedInstance = new AtomicReference<>();

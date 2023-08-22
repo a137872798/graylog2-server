@@ -69,7 +69,8 @@ import java.util.stream.StreamSupport;
 import static com.google.common.base.Strings.isNullOrEmpty;
 
 /**
- * 流服务对象  包含了与其他组件交互的逻辑   流本身是一个bean对象
+ * 流服务对象  包含了与其他组件交互的逻辑
+ * 流本身是一个bean对象 绑定一个索引集 并在下游关联多个output对象
  */
 public class StreamServiceImpl extends PersistedServiceImpl implements StreamService {
     private static final Logger LOG = LoggerFactory.getLogger(StreamServiceImpl.class);
@@ -87,8 +88,19 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
      * 实际上提供IndexSetConfig的crud服务
      */
     private final IndexSetService indexSetService;
+
+    /**
+     * 提供一些索引集相关的功能
+     */
     private final MongoIndexSet.Factory indexSetFactory;
+
+    /**
+     * TODO 通知服务 Notification也是一个bean对象  表示一个通知
+     */
     private final NotificationService notificationService;
+    /**
+     * TODO
+     */
     private final EntityOwnershipService entityOwnershipService;
     private final ClusterEventBus clusterEventBus;
 
@@ -111,6 +123,11 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         this.clusterEventBus = clusterEventBus;
     }
 
+    /**
+     * 从stream对象上获取索引集id
+     * @param dbObject
+     * @return
+     */
     @Nullable
     private IndexSet getIndexSet(DBObject dbObject) {
         return getIndexSet((String) dbObject.get(StreamImpl.FIELD_INDEX_SET_ID));
@@ -121,10 +138,17 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         if (isNullOrEmpty(id)) {
             return null;
         }
+        // config id 和 index set是一个对象吗?
         final Optional<IndexSetConfig> indexSetConfig = indexSetService.get(id);
         return indexSetConfig.flatMap(c -> Optional.of(indexSetFactory.create(c))).orElse(null);
     }
 
+    /**
+     * 通过 streamId 加载stream
+     * @param id
+     * @return
+     * @throws NotFoundException
+     */
     public Stream load(ObjectId id) throws NotFoundException {
         final DBObject o = get(StreamImpl.class, id);
 
@@ -132,15 +156,24 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
             throw new NotFoundException("Stream <" + id + "> not found!");
         }
 
+        // 通过stream反查rule
         final List<StreamRule> streamRules = streamRuleService.loadForStreamId(id.toHexString());
 
+        // 查询stream关联的一组output
         final Set<Output> outputs = loadOutputsForRawStream(o);
 
         @SuppressWarnings("unchecked")
         final Map<String, Object> fields = o.toMap();
+
+        // 将streamRule output indexSet 信息组合起来 得到一个完整的stream
         return new StreamImpl((ObjectId) o.get(StreamImpl.FIELD_ID), fields, streamRules, outputs, getIndexSet(o));
     }
 
+    /**
+     * stream 会关联一个索引集
+     * @param fields
+     * @return
+     */
     @Override
     public Stream create(Map<String, Object> fields) {
         return new StreamImpl(fields, getIndexSet((String) fields.get(StreamImpl.FIELD_INDEX_SET_ID)));
@@ -162,6 +195,12 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         return create(streamData);
     }
 
+    /**
+     * 通过streamId 查询各种相关的属性 并进行组装
+     * @param id
+     * @return
+     * @throws NotFoundException
+     */
     @Override
     public Stream load(String id) throws NotFoundException {
         try {
@@ -171,6 +210,10 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         }
     }
 
+    /**
+     * 查找所有可用的流
+     * @return
+     */
     @Override
     public List<Stream> loadAllEnabled() {
         return loadAllEnabled(new HashMap<>());
@@ -192,7 +235,14 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         return loadAll(query);
     }
 
+    /**
+     * 根据条件查询stream
+     * @param query
+     * @return
+     */
     private List<Stream> loadAll(DBObject query) {
+
+        // 基于条件从mongodb中查到一组对象
         final List<DBObject> results = query(StreamImpl.class, query);
         final List<String> streamIds = results.stream()
                 .map(o -> o.get(StreamImpl.FIELD_ID).toString())
@@ -213,12 +263,15 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
                 .collect(Collectors.toMap(Output::getId, Function.identity()));
 
 
+        // 在这里拼接流
         for (DBObject o : results) {
             final ObjectId objectId = (ObjectId) o.get(StreamImpl.FIELD_ID);
             final String id = objectId.toHexString();
+            // 找到stream关联的一组rule
             final List<StreamRule> streamRules = allStreamRules.getOrDefault(id, Collections.emptyList());
             LOG.debug("Found {} rules for stream <{}>", streamRules.size(), id);
 
+            // 找到关联的output
             final Set<Output> outputs = outputIdsForRawStream(o)
                     .stream()
                     .map(ObjectId::toHexString)
@@ -244,11 +297,22 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         return streams.build();
     }
 
+    /**
+     *
+     * @param o
+     * @return
+     */
     private List<ObjectId> outputIdsForRawStream(DBObject o) {
+        // stream允许关联多个output对象  这里返回他们的id
         final List<ObjectId> objectIds = (List<ObjectId>) o.get(StreamImpl.FIELD_OUTPUTS);
         return objectIds == null ? Collections.emptyList() : objectIds;
     }
 
+    /**
+     * 返回stream关联的 indexSet
+     * @param streams
+     * @return
+     */
     private Map<String, IndexSet> indexSetsForStreams(List<DBObject> streams) {
         final Set<String> indexSetIds = streams.stream()
                 .map(stream -> (String) stream.get(StreamImpl.FIELD_INDEX_SET_ID))
@@ -276,11 +340,17 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
                 .collect(Collectors.toSet());
         final DBObject query = QueryBuilder.start(StreamImpl.FIELD_ID).in(objectIds).get();
         final DBObject onlyIndexSetIdField = DBProjection.include(StreamImpl.FIELD_INDEX_SET_ID);
+        // 只获取这些stream 关联的 indexSetId
         return StreamSupport.stream(collection(StreamImpl.class).find(query, onlyIndexSetIdField).spliterator(), false)
                 .map(s -> s.get(StreamImpl.FIELD_INDEX_SET_ID).toString())
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * 查询stream关联的 output
+     * @param stream
+     * @return
+     */
     protected Set<Output> loadOutputsForRawStream(DBObject stream) {
         List<ObjectId> outputIds = outputIdsForRawStream(stream);
 
@@ -288,6 +358,7 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         if (outputIds != null) {
             for (ObjectId outputId : outputIds) {
                 try {
+                    // 通过id 去mongodb加载 output对象  这些service提供了CRUD能力
                     result.add(outputService.load(outputId.toHexString()));
                 } catch (NotFoundException e) {
                     LOG.warn("Non-existing output <{}> referenced from stream <{}>!", outputId.toHexString(), stream.get(StreamImpl.FIELD_ID));
@@ -303,6 +374,11 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         return totalCount(StreamImpl.class);
     }
 
+    /**
+     * 销毁某个stream
+     * @param stream
+     * @throws NotFoundException
+     */
     @Override
     public void destroy(Stream stream) throws NotFoundException {
         for (StreamRule streamRule : streamRuleService.loadForStream(stream)) {
@@ -310,6 +386,8 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         }
 
         final String streamId = stream.getId();
+
+        // 找到针对该stream的通知对象 进行销毁(也就是从mongodb移除)
         for (Notification notification : notificationService.all()) {
             Object rawValue = notification.getDetail("stream_id");
             if (rawValue != null && rawValue.toString().equals(streamId)) {
@@ -336,6 +414,11 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         save(stream);
     }
 
+    /**
+     * 将流变为暂停状态 并发布相关事件
+     * @param stream
+     * @throws ValidationException
+     */
     @Override
     public void pause(Stream stream) throws ValidationException {
         stream.setDisabled(true);
@@ -350,6 +433,11 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         clusterEventBus.post(StreamsChangedEvent.create(streamId));
     }
 
+    /**
+     * 为stream 多关联一个output
+     * @param stream
+     * @param output
+     */
     @Override
     public void addOutput(Stream stream, Output output) {
         collection(stream).update(
@@ -359,6 +447,11 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         clusterEventBus.post(StreamsChangedEvent.create(stream.getId()));
     }
 
+    /**
+     * 为stream增加一组output
+     * @param streamId
+     * @param outputIds
+     */
     @Override
     public void addOutputs(ObjectId streamId, Collection<ObjectId> outputIds) {
         final BasicDBList outputs = new BasicDBList();
@@ -405,12 +498,22 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         clusterEventBus.post(StreamsChangedEvent.create(updatedStreams));
     }
 
+    /**
+     * 查询共享该索引集的所有stream
+     * @param indexSetId
+     * @return
+     */
     @Override
     public List<Stream> loadAllWithIndexSet(String indexSetId) {
         final Map<String, Object> query = db(StreamImpl.FIELD_INDEX_SET_ID, indexSetId);
         return loadAll(query);
     }
 
+    /**
+     * 为这些stream 绑定同一个indexSet
+     * @param indexSetId
+     * @param streamIds
+     */
     @Override
     public void addToIndexSet(String indexSetId, Collection<String> streamIds) {
         final Set<ObjectId> objectIds = streamIds.stream()
@@ -433,6 +536,14 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         return savedStreamId;
     }
 
+    /**
+     * 将stream 与 streamRule user 关联起来
+     * @param stream
+     * @param streamRules
+     * @param user
+     * @return
+     * @throws ValidationException
+     */
     @Override
     public String saveWithRulesAndOwnership(Stream stream, Collection<StreamRule> streamRules, User user) throws ValidationException {
         final String savedStreamId = super.save(stream);

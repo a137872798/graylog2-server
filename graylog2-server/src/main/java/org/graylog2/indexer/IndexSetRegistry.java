@@ -24,6 +24,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * 用于管理所有索引集
+ */
 public interface IndexSetRegistry extends Iterable<IndexSet> {
     /**
      * Returns a list of all {@link IndexSet} instances.

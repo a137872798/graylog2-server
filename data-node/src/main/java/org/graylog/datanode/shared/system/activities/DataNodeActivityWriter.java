@@ -21,6 +21,9 @@ import org.graylog2.shared.system.activities.ActivityWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 仅产生日志
+ */
 public class DataNodeActivityWriter implements ActivityWriter {
     private static final Logger LOG = LoggerFactory.getLogger(DataNodeActivityWriter.class);
 

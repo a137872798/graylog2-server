@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Named;
 
+/**
+ * 该后台任务会定期优化索引
+ */
 public class OptimizeIndexJob extends SystemJob {
     public interface Factory {
         OptimizeIndexJob create(String index, int maxNumSegments);
@@ -35,13 +38,32 @@ public class OptimizeIndexJob extends SystemJob {
 
     private static final Logger LOG = LoggerFactory.getLogger(OptimizeIndexJob.class);
 
+    /**
+     * 索引对象 开放各种api
+     */
     private final Indices indices;
+    /**
+     * 用于写入activity对象
+     */
     private final ActivityWriter activityWriter;
     private final Duration indexOptimizationTimeout;
+
+    /**
+     * 允许的并行度
+     */
     private final int indexOptimizationJobs;
     private final String index;
     private final int maxNumSegments;
 
+    /**
+     * 每个job对象 仅针对一个index
+     * @param indices
+     * @param activityWriter
+     * @param indexOptimizationTimeout
+     * @param indexOptimizationJobs
+     * @param index
+     * @param maxNumSegments
+     */
     @AssistedInject
     public OptimizeIndexJob(Indices indices,
                             ActivityWriter activityWriter,
@@ -59,10 +81,13 @@ public class OptimizeIndexJob extends SystemJob {
 
     @Override
     public void execute() {
+        // 已经不存在相关的索引了  无需优化
         if (!indices.exists(index)) {
             LOG.debug("Not running job for deleted index <{}>", index);
             return;
         }
+
+        // 索引已经被关闭 不需要处理
         if (indices.isClosed(index)) {
             LOG.debug("Not running job for closed index <{}>", index);
             return;
@@ -72,6 +97,7 @@ public class OptimizeIndexJob extends SystemJob {
         activityWriter.write(new Activity(msg, OptimizeIndexJob.class));
         LOG.info(msg);
 
+        // 调用索引api 进行索引优化  也就是触发段合并
         indices.optimizeIndex(index, maxNumSegments, indexOptimizationTimeout);
     }
 

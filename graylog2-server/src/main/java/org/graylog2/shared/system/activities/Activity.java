@@ -22,6 +22,9 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 表示一个活跃对象
+ */
 public final class Activity {
     private final Class<?> caller;
     private String message;

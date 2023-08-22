@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 获取描述每个索引的块对象
+ */
 public class IndicesBlockStatus {
 
     private Map<String, Collection<String>> blocksPerIndex = new HashMap<>();
@@ -35,6 +38,10 @@ public class IndicesBlockStatus {
         return blocksPerIndex.get(indexName);
     }
 
+    /**
+     * 返回的是索引的数量
+     * @return
+     */
     public int countBlockedIndices() {
         return blocksPerIndex.size();
     }

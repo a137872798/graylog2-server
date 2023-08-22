@@ -58,15 +58,26 @@ import static org.graylog2.audit.AuditEventTypes.ES_INDEX_RANGE_DELETE;
 import static org.graylog2.indexer.indices.Indices.checkIfHealthy;
 
 /**
- * 描述一个索引的范围
+ * 可以检索索引的范围数据
  */
 @Singleton
 public class MongoIndexRangeService implements IndexRangeService {
     private static final Logger LOG = LoggerFactory.getLogger(MongoIndexRangeService.class);
     private static final String COLLECTION_NAME = "index_ranges";
 
+    /**
+     * 真正的索引对象 对外开放了各种操作索引的api
+     */
     private final Indices indices;
+
+    /**
+     * 通过它可以检索索引集
+     */
     private final IndexSetRegistry indexSetRegistry;
+
+    /**
+     * NOOP
+     */
     private final AuditEventSender auditEventSender;
     private final NodeId nodeId;
     private final JacksonDBCollection<MongoIndexRange, ObjectId> collection;
@@ -91,6 +102,7 @@ public class MongoIndexRangeService implements IndexRangeService {
 
         eventBus.register(this);
 
+        // 创建 index_name/begin_time/end_time 索引
         collection.createIndex(new BasicDBObject(MongoIndexRange.FIELD_INDEX_NAME, 1));
         collection.createIndex(BasicDBObjectBuilder.start()
                 .add(MongoIndexRange.FIELD_BEGIN, 1)
@@ -98,11 +110,20 @@ public class MongoIndexRangeService implements IndexRangeService {
                 .get());
     }
 
+    //  包含 "start" 代表旧的索引 忽略
+
+    /**
+     * 通过名字查询索引范围
+     * @param index
+     * @return
+     * @throws NotFoundException
+     */
     @Override
     public IndexRange get(String index) throws NotFoundException {
         final DBQuery.Query query = DBQuery.and(
                 DBQuery.notExists("start"),
                 DBQuery.is(IndexRange.FIELD_INDEX_NAME, index));
+        // 只查询第一个
         final MongoIndexRange indexRange = collection.findOne(query);
         if (indexRange == null) {
             throw new NotFoundException("Index range for index <" + index + "> not found.");
@@ -111,6 +132,12 @@ public class MongoIndexRangeService implements IndexRangeService {
         return indexRange;
     }
 
+    /**
+     * 查询时间范围内所有索引
+     * @param begin
+     * @param end
+     * @return
+     */
     @Override
     public SortedSet<IndexRange> find(DateTime begin, DateTime end) {
         final DBQuery.Query query = DBQuery.or(
@@ -144,13 +171,22 @@ public class MongoIndexRangeService implements IndexRangeService {
                 (status) -> new RuntimeException("Unable to calculate range for index <" + index + ">, index is unhealthy: " + status));
         final DateTime now = DateTime.now(DateTimeZone.UTC);
         final Stopwatch sw = Stopwatch.createStarted();
+
+        // 获取该索引的统计数据  其中包含最早时间最晚时间 以及所有streamid
         final IndexRangeStats stats = indices.indexRangeStatsOfIndex(index);
         final int duration = Ints.saturatedCast(sw.stop().elapsed(TimeUnit.MILLISECONDS));
 
         LOG.info("Calculated range of [{}] in [{}ms].", index, duration);
+
+        // 根据统计信息产生一个range对象
         return MongoIndexRange.create(index, stats.min(), stats.max(), now, duration, stats.streamIds());
     }
 
+    /**
+     * 创建一个空range对象
+     * @param index
+     * @return
+     */
     @Override
     public IndexRange createUnknownRange(String index) {
         final DateTime begin = new DateTime(0L, DateTimeZone.UTC);
@@ -161,6 +197,7 @@ public class MongoIndexRangeService implements IndexRangeService {
 
     @Override
     public WriteResult<MongoIndexRange, ObjectId> save(IndexRange indexRange) {
+        // 移除旧的range存储新的  也就是range照理说始终只有一个
         remove(indexRange.indexName());
         final WriteResult<MongoIndexRange, ObjectId> save = collection.save(MongoIndexRange.create(indexRange));
         return save;
@@ -172,6 +209,10 @@ public class MongoIndexRangeService implements IndexRangeService {
         return remove.getN() > 0;
     }
 
+    /**
+     * 感知到索引删除事件后 同步删除range数据
+     * @param event
+     */
     @Subscribe
     @AllowConcurrentEvents
     public void handleIndexDeletion(IndicesDeletedEvent event) {
@@ -187,6 +228,10 @@ public class MongoIndexRangeService implements IndexRangeService {
         }
     }
 
+    /**
+     * close 也是删除range数据
+     * @param event
+     */
     @Subscribe
     @AllowConcurrentEvents
     public void handleIndexClosing(IndicesClosedEvent event) {
@@ -202,6 +247,10 @@ public class MongoIndexRangeService implements IndexRangeService {
         }
     }
 
+    /**
+     * 重新生成range对象
+     * @param event
+     */
     @Subscribe
     @AllowConcurrentEvents
     public void handleIndexReopening(IndicesReopenedEvent event) {

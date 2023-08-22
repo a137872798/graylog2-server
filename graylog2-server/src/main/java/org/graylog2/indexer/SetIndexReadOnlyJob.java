@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
+/**
+ * 该对象用于将索引设置成只读
+ */
 public class SetIndexReadOnlyJob extends SystemJob {
     private static final Logger log = LoggerFactory.getLogger(SetIndexReadOnlyJob.class);
 
@@ -39,9 +42,23 @@ public class SetIndexReadOnlyJob extends SystemJob {
 
     }
 
+    /**
+     * 索引对象
+     */
     private final Indices indices;
+
+    /**
+     * 通过该对象可以将索引集配置转换成索引集
+     */
     private final IndexSetRegistry indexSetRegistry;
+    /**
+     * 用于优化索引的任务 也就是触发段合并
+     */
     private final OptimizeIndexJob.Factory optimizeIndexJobFactory;
+
+    /**
+     * 该对象管理所有后台任务
+     */
     private final SystemJobManager systemJobManager;
     private final String index;
     private final ActivityWriter activityWriter;
@@ -72,6 +89,7 @@ public class SetIndexReadOnlyJob extends SystemJob {
             return;
         }
 
+        // 通过名字找到索引集对象
         final Optional<IndexSet> indexSet = indexSetRegistry.getForIndex(index);
 
         if (!indexSet.isPresent()) {
@@ -80,17 +98,21 @@ public class SetIndexReadOnlyJob extends SystemJob {
         }
 
         log.info("Flushing old index <{}>.", index);
+        // 先强制刷盘
         indices.flush(index);
 
         // Record the time an index was set read-only.
         // We call this the "closing date" because it denotes when we stopped writing to it.
+        // 关闭旧索引
         indices.setClosingDate(index, Tools.nowUTC());
 
         log.info("Setting old index <{}> to read-only.", index);
+        // 设置为只读
         indices.setReadOnly(index);
 
         activityWriter.write(new Activity("Flushed and set <" + index + "> to read-only.", SetIndexReadOnlyJob.class));
 
+        // 还会对该索引进行优化
         if (!indexSet.get().getConfig().indexOptimizationDisabled()) {
             try {
                 systemJobManager.submit(optimizeIndexJobFactory.create(index, indexSet.get().getConfig().indexOptimizationMaxNumSegments()));

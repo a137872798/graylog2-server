@@ -42,6 +42,9 @@ import java.util.stream.Collectors;
 public class IndexFieldTypesService {
     private static final String FIELDS_FIELD_NAMES = String.format(Locale.US, "%s.%s", IndexFieldTypesDTO.FIELD_FIELDS, FieldTypeDTO.FIELD_NAME);
 
+    /**
+     * IndexFieldTypesDTO 描述了索引集字段类型
+     */
     private final JacksonDBCollection<IndexFieldTypesDTO, ObjectId> db;
     private final StreamService streamService;
 

@@ -31,6 +31,9 @@ import java.util.Map;
 
 import static org.graylog2.shared.security.RestPermissions.SYSTEMMESSAGES_READ;
 
+/**
+ * 也是一个bean对象
+ */
 @DbEntity(collection = "system_messages",
           titleField = "content",
           readPermission = SYSTEMMESSAGES_READ)

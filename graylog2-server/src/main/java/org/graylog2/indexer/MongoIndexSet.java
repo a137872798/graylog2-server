@@ -76,24 +76,55 @@ public class MongoIndexSet implements IndexSet {
     }
 
     /**
-     * 该索引相关的配置对象
+     * 该索引集相关的配置对象
      */
     private final IndexSetConfig config;
     /**
      * 此时写入的索引别名
      */
     private final String writeIndexAlias;
+
+    /**
+     * 真正的索引对象 内部接入了存储引擎
+     */
     private final Indices indices;
 
     // 索引正则/偏转索引正则
     private final Pattern indexPattern;
     private final Pattern deflectorIndexPattern;
+
+    /**
+     * 索引通配符
+     */
     private final String indexWildcard;
+    /**
+     * 索引的范围信息会存储在mongodb中  可以通过该服务查询
+     */
     private final IndexRangeService indexRangeService;
+
+    /**
+     * NOOP
+     */
     private final AuditEventSender auditEventSender;
+
+    /**
+     * 该索引集所在的节点id
+     */
     private final NodeId nodeId;
+
+    /**
+     * 该对象会管理各种后台任务
+     */
     private final SystemJobManager systemJobManager;
+
+    /**
+     * 该job的作用是 将索引设置成只读,并计算最新的range,然后将索引的field信息拉取到本地并存储到mongodb中
+     */
     private final SetIndexReadOnlyAndCalculateRangeJob.Factory jobFactory;
+
+    /**
+     * 用于写入activity对象
+     */
     private final ActivityWriter activityWriter;
 
     @Inject
@@ -133,17 +164,26 @@ public class MongoIndexSet implements IndexSet {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public String[] getManagedIndices() {
+        // 查询满足正则的所有索引名  这些就是归属于该索引集的索引
         final Set<String> indexNames = indices.getIndexNamesAndAliases(getIndexWildcard()).keySet();
         // also allow restore archives to be returned
         final List<String> result = indexNames.stream()
-                .filter(this::isManagedIndex)
+                .filter(this::isManagedIndex)  // 对索引做一次过滤
                 .collect(Collectors.toList());
 
         return result.toArray(new String[result.size()]);
     }
 
+    /**
+     * 返回此时可写索引的别名  一个索引集只有一个可写索引
+     * @return
+     */
     @Override
     public String getWriteIndexAlias() {
         return writeIndexAlias;
@@ -159,8 +199,14 @@ public class MongoIndexSet implements IndexSet {
         return buildIndexName(getNewestIndexNumber());
     }
 
+    /**
+     * 获取最新的索引编号
+     * @return
+     * @throws NoTargetIndexException
+     */
     @VisibleForTesting
     int getNewestIndexNumber() throws NoTargetIndexException {
+        // 返回匹配正则的所有索引
         final Set<String> indexNames = indices.getIndexNamesAndAliases(getIndexWildcard()).keySet();
 
         if (indexNames.isEmpty()) {
@@ -169,6 +215,7 @@ public class MongoIndexSet implements IndexSet {
 
         int highestIndexNumber = -1;
         for (String indexName : indexNames) {
+            // 只需要处理deflector索引
             if (!isGraylogDeflectorIndex(indexName)) {
                 continue;
             }
@@ -186,6 +233,11 @@ public class MongoIndexSet implements IndexSet {
         return highestIndexNumber;
     }
 
+    /**
+     * 从索引名字中抽取编号
+     * @param indexName index name
+     * @return
+     */
     @Override
     public Optional<Integer> extractIndexNumber(final String indexName) {
         final int beginIndex = config.indexPrefix().length() + 1;
@@ -211,12 +263,21 @@ public class MongoIndexSet implements IndexSet {
         return !isNullOrEmpty(indexName) && !isWriteIndexAlias(indexName) && deflectorIndexPattern.matcher(indexName).matches();
     }
 
+    /**
+     * 从别名转换成普通名字
+     * @return
+     * @throws TooManyAliasesException
+     */
     @Override
     @Nullable
     public String getActiveWriteIndex() throws TooManyAliasesException {
         return indices.aliasTarget(getWriteIndexAlias()).orElse(null);
     }
 
+    /**
+     * 注意只需要deflector索引
+     * @return
+     */
     @Override
     public Map<String, Set<String>> getAllIndexAliases() {
         final Map<String, Set<String>> indexNamesAndAliases = indices.getIndexNamesAndAliases(getIndexWildcard());
@@ -247,8 +308,13 @@ public class MongoIndexSet implements IndexSet {
         return !isNullOrEmpty(index) && !isWriteIndexAlias(index) && indexPattern.matcher(index).matches();
     }
 
+    /**
+     * 准备索引集去接收消息
+     */
     @Override
     public void setUp() {
+
+        // 表明索引集已经被关闭
         if (!getConfig().isWritable()) {
             LOG.debug("Not setting up non-writable index set <{}> ({})", getConfig().id(), getConfig().title());
             return;
@@ -262,9 +328,11 @@ public class MongoIndexSet implements IndexSet {
 
             // Do we have a target index to point to?
             try {
+                // 产生一个最新的索引名
                 final String currentTarget = getNewestIndex();
                 LOG.info("Pointing to already existing index target <{}>", currentTarget);
 
+                // 更新索引
                 pointTo(currentTarget);
             } catch (NoTargetIndexException ex) {
                 final String msg = "There is no index target to point to. Creating one now.";
@@ -338,6 +406,10 @@ public class MongoIndexSet implements IndexSet {
         auditEventSender.success(AuditActor.system(nodeId), ES_WRITE_INDEX_UPDATE, ImmutableMap.of("indexName", newTarget));
     }
 
+    /**
+     * 为某个索引设置定时任务
+     * @param indexName
+     */
     private void setIndexReadOnlyAndCalculateRange(String indexName) {
         // perform these steps after a delay, so we don't race with indexing into the alias
         // it can happen that an index request still writes to the old deflector target, while we cycled it above.
@@ -351,6 +423,10 @@ public class MongoIndexSet implements IndexSet {
         }
     }
 
+    /**
+     * 为该索引创建一个空的range对象
+     * @param indexName
+     */
     private void addDeflectorIndexRange(String indexName) {
         final IndexRange deflectorRange = indexRangeService.createUnknownRange(indexName);
         indexRangeService.save(deflectorRange);
@@ -366,6 +442,11 @@ public class MongoIndexSet implements IndexSet {
         indices.removeAliases(getWriteIndexAlias(), sortedSet.headSet(sortedSet.last()));
     }
 
+    /**
+     * 更换索引
+     * @param newIndexName index to add the write index alias to
+     * @param oldIndexName index to remove the write index alias from
+     */
     @Override
     public void pointTo(String newIndexName, String oldIndexName) {
         indices.cycleAlias(getWriteIndexAlias(), newIndexName, oldIndexName);

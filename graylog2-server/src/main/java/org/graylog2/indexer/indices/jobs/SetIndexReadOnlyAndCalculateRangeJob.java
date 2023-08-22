@@ -29,6 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 
+/**
+ * 用于将索引设置成只读 并且自动计算索引range的后台任务
+ */
 public class SetIndexReadOnlyAndCalculateRangeJob extends SystemJob {
     private static final Logger LOG = LoggerFactory.getLogger(SetIndexReadOnlyAndCalculateRangeJob.class);
 
@@ -36,11 +39,24 @@ public class SetIndexReadOnlyAndCalculateRangeJob extends SystemJob {
         SetIndexReadOnlyAndCalculateRangeJob create(String indexName);
     }
 
+    /**
+     * 该对象负责将索引修改成只读
+     */
     private final SetIndexReadOnlyJob.Factory setIndexReadOnlyJobFactory;
+    /**
+     * 产生range对象
+     */
     private final CreateNewSingleIndexRangeJob.Factory createNewSingleIndexRangeJobFactory;
     private final IndexSetRegistry indexSetRegistry;
     private final Indices indices;
+    /**
+     * 将索引字段信息存储在mongodb中
+     */
     private final IndexFieldTypesService indexFieldTypesService;
+
+    /**
+     * 该服务可以拉取索引的字段
+     */
     private final IndexFieldTypePoller indexFieldTypePoller;
     private final String indexName;
 
@@ -71,12 +87,16 @@ public class SetIndexReadOnlyAndCalculateRangeJob extends SystemJob {
             LOG.debug("Not running job for closed index <{}>", indexName);
             return;
         }
+        // 该任务用于将索引设置成只读 (会强制触发一次刷盘)
         final SystemJob setIndexReadOnlyJob = setIndexReadOnlyJobFactory.create(indexName);
         setIndexReadOnlyJob.execute();
+
+        // 当索引修改成只读后 就不会继续更新数据了 然后这里为该索引创建range对象
         final SystemJob createNewSingleIndexRangeJob = createNewSingleIndexRangeJobFactory.create(indexSetRegistry.getAll(), indexName);
         createNewSingleIndexRangeJob.execute();
 
         // Update field type information again to make sure we got the latest state
+        // 拉取索引集最新的字段信息 并存储到mongodb中
         indexSetRegistry.getForIndex(indexName)
                 .ifPresent(indexSet -> {
                     indexFieldTypePoller.pollIndex(indexName, indexSet.getConfig().id())

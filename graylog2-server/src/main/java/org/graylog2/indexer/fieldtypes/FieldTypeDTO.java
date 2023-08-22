@@ -23,6 +23,9 @@ import com.google.auto.value.AutoValue;
 
 import java.util.Set;
 
+/**
+ * 描述字段类型
+ */
 @AutoValue
 @JsonDeserialize(builder = FieldTypeDTO.Builder.class)
 public abstract class FieldTypeDTO {

@@ -31,10 +31,14 @@ import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * This class can be used to poll index field type information for indices in an {@link IndexSet}.
+ * 用于拉取索引的字段
  */
 public class IndexFieldTypePoller {
     private final Indices indices;
     private final Timer pollTimer;
+    /**
+     * 该对象底层对接存储引擎
+     */
     private final IndexFieldTypePollerAdapter indexFieldTypePollerAdapter;
     private final boolean maintainsStreamBasedFieldLists;
 
@@ -88,6 +92,7 @@ public class IndexFieldTypePoller {
      * @param indexName  index name to poll types for
      * @param indexSetId index set ID of the given index
      * @return the polled index field type data for the given index
+     * 获取该索引的字段信息
      */
     public Optional<IndexFieldTypesDTO> pollIndex(final String indexName, final String indexSetId) {
         final Optional<Set<FieldTypeDTO>> optionalFields = indexFieldTypePollerAdapter.pollIndex(indexName, pollTimer);

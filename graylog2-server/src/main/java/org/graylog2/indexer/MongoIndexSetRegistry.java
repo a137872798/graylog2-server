@@ -44,13 +44,34 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 通过mongodb来管理所有索引集
+ */
 @Singleton
 public class MongoIndexSetRegistry implements IndexSetRegistry {
+
+    /**
+     * 通过该对象可以获取 IndexSetConfig
+     */
     private final IndexSetService indexSetService;
+
+    /**
+     * 通过工厂可以创建索引集对象
+     */
     private final MongoIndexSet.Factory mongoIndexSetFactory;
 
+    /**
+     * 索引集缓存
+     */
     static class IndexSetsCache {
+
+        /**
+         * 通过该对象可以拿到索引集配置
+         */
         private final IndexSetService indexSetService;
+        /**
+         * 通过该对象可以获取一组索引集配置    调用supplier会间接调用 findAll
+         */
         private AtomicReference<Supplier<List<IndexSetConfig>>> indexSetConfigs;
 
         @Inject
@@ -70,6 +91,7 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
             this.indexSetConfigs.set(Suppliers.memoize(this.indexSetService::findAll));
         }
 
+        // 感知到事件后 刷新索引
         @Subscribe
         void handleIndexSetCreation(IndexSetCreatedEvent indexSetCreatedEvent) {
             this.invalidate();
@@ -81,6 +103,9 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
         }
     }
 
+    /**
+     * 索引集缓存对象
+     */
     private final IndexSetsCache indexSetsCache;
 
     @Inject
@@ -92,10 +117,15 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
         this.indexSetsCache = indexSetsCache;
     }
 
+    /**
+     * 从缓存中加载所有索引集配置 并挨个创建索引集
+     * @return
+     */
     private Set<MongoIndexSet> findAllMongoIndexSets() {
         final List<IndexSetConfig> configs = this.indexSetsCache.get();
         final ImmutableSet.Builder<MongoIndexSet> mongoIndexSets = ImmutableSet.builder();
         for (IndexSetConfig config : configs) {
+            // 根据配置构建索引集
             final MongoIndexSet mongoIndexSet = mongoIndexSetFactory.create(config);
             mongoIndexSets.add(mongoIndexSet);
         }
@@ -106,6 +136,11 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
         return ImmutableSet.copyOf(findAllMongoIndexSets());
     }
 
+    /**
+     * 通过id 找到对应的索引集配置 并生成索引集
+     * @param indexSetId ID of the index set
+     * @return
+     */
     @Override
     public Optional<IndexSet> get(final String indexSetId) {
         return this.indexSetsCache.get()
@@ -115,6 +150,11 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
                 .findFirst();
     }
 
+    /**
+     * 通过索引名称 反查索引集
+     * @param indexName name of the index
+     * @return
+     */
     @Override
     public Optional<IndexSet> getForIndex(String indexName) {
         return findAllMongoIndexSets()
@@ -126,8 +166,10 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
 
     @Override
     public Set<IndexSet> getForIndices(Collection<String> indices) {
+        // 获取所有索引集
         final Set<? extends IndexSet> indexSets = findAllMongoIndexSets();
         final ImmutableSet.Builder<IndexSet> resultBuilder = ImmutableSet.builder();
+        // 挨个匹配索引名 将匹配的返回
         for (IndexSet indexSet : indexSets) {
             for (String index : indices) {
                 if (indexSet.isManagedIndex(index)) {
@@ -139,6 +181,11 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
         return resultBuilder.build();
     }
 
+    /**
+     * 通过配置创建索引集
+     * @param indexSetConfigs Collection of index configurations
+     * @return
+     */
     @Override
     public Set<IndexSet> getFromIndexConfig(Collection<IndexSetConfig> indexSetConfigs) {
         final ImmutableSet.Builder<MongoIndexSet> mongoIndexSets = ImmutableSet.builder();
@@ -154,6 +201,10 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
         return mongoIndexSetFactory.create(indexSetService.getDefault());
     }
 
+    /**
+     * 把每个索引集管理的每个索引 加入到列表中
+     * @return
+     */
     @Override
     public String[] getManagedIndices() {
         final ImmutableSet.Builder<String> indexNamesBuilder = ImmutableSet.builder();
@@ -186,6 +237,10 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
         return false;
     }
 
+    /**
+     * 返回所有管理的索引集的通配符
+     * @return
+     */
     @Override
     public String[] getIndexWildcards() {
         final ImmutableSet.Builder<String> wildcardsBuilder = ImmutableSet.builder();
@@ -199,6 +254,10 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
         return wildcards.toArray(new String[0]);
     }
 
+    /**
+     * 返回所有写入用的索引
+     * @return
+     */
     @Override
     public String[] getWriteIndexAliases() {
         final ImmutableSet.Builder<String> indexNamesBuilder = ImmutableSet.builder();
@@ -219,6 +278,11 @@ public class MongoIndexSetRegistry implements IndexSetRegistry {
             .allMatch(MongoIndexSet::isUp);
     }
 
+    /**
+     * 判断传入的是否是可写索引
+     * @param indexName the name of the index to check
+     * @return
+     */
     @Override
     public boolean isCurrentWriteIndexAlias(String indexName) {
         for (MongoIndexSet indexSet : findAllMongoIndexSets()) {

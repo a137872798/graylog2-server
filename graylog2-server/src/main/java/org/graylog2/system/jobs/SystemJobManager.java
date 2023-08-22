@@ -44,8 +44,15 @@ public class SystemJobManager {
     private static final Logger LOG = LoggerFactory.getLogger(SystemJobManager.class);
     private static final int THREAD_POOL_SIZE = 15;
 
+    /**
+     * 负责将 activity 对象写入 mongodb 中
+     */
     private final ActivityWriter activityWriter;
     private final ScheduledExecutorService executor;
+
+    /**
+     * 描述系统级别任务 (由定时器运行)
+     */
     private final Map<String, SystemJob> jobs;
 
     @Inject
@@ -63,12 +70,27 @@ public class SystemJobManager {
                 name(this.getClass(), "executor-service"));
     }
 
+    /**
+     * 提交后台任务
+     * @param job
+     * @return
+     * @throws SystemJobConcurrencyException
+     */
     public String submit(final SystemJob job) throws SystemJobConcurrencyException {
         return submitWithDelay(job, 0, TimeUnit.SECONDS);
     }
 
+    /**
+     * 代表在一定延时后运行任务
+     * @param job
+     * @param delay
+     * @param timeUnit
+     * @return
+     * @throws SystemJobConcurrencyException
+     */
     public synchronized String submitWithDelay(final SystemJob job, final long delay, TimeUnit timeUnit) throws SystemJobConcurrencyException {
         // for immediate jobs, check allowed concurrency right now
+        // 检测并行度
         if (delay == 0) {
             checkAllowedConcurrency(job);
         }
@@ -92,6 +114,7 @@ public class SystemJobManager {
                     executeJob(job);  // ... blocks until it finishes.
                     x.stop();
 
+                    // 每执行完一次系统任务 需要打印日志 或者入库(mongodb)
                     final String msg = "SystemJob <" + job.getId() + "> [" + jobClass + "] finished in " + x.elapsed(
                         TimeUnit.MILLISECONDS) + "ms.";
                     LOG.info(msg);
@@ -115,6 +138,11 @@ public class SystemJobManager {
         job.execute();
     }
 
+    /**
+     * 当执行任务时检测是否达到并行度上限
+     * @param job
+     * @throws SystemJobConcurrencyException
+     */
     protected void checkAllowedConcurrency(SystemJob job) throws SystemJobConcurrencyException {
         final int concurrent = concurrentJobs(job.getClass());
 

@@ -50,12 +50,24 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.graylog2.audit.AuditEventTypes.SYSTEM_NOTIFICATION_CREATE;
 import static org.graylog2.audit.AuditEventTypes.SYSTEM_NOTIFICATION_DELETE;
 
+/**
+ * 通知服务对象
+ */
 @Singleton
 public class NotificationServiceImpl extends PersistedServiceImpl implements NotificationService {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
+    /**
+     * 节点id
+     */
     private final NodeId nodeId;
+    /**
+     * 审计事件发送对象 NOOP
+     */
     private final AuditEventSender auditEventSender;
+    /**
+     * 事件处理引擎
+     */
     private final EventProcessorEngine eventProcessorEngine;
     private final DBEventDefinitionService dbEventDefinitionService;
     private final SystemNotificationRenderService systemNotificationRenderService;

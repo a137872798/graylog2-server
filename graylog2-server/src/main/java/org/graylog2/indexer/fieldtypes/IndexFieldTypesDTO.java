@@ -27,6 +27,9 @@ import org.mongojack.ObjectId;
 import javax.annotation.Nullable;
 import java.util.Set;
 
+/**
+ * 描述索引集的字段
+ */
 @AutoValue
 @JsonDeserialize(builder = IndexFieldTypesDTO.Builder.class)
 public abstract class IndexFieldTypesDTO {

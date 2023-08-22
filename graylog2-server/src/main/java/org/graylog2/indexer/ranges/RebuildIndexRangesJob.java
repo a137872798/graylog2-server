@@ -34,6 +34,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 该job用于重建range对象
+ */
 public class RebuildIndexRangesJob extends SystemJob {
     public interface Factory {
         RebuildIndexRangesJob create(Set<IndexSet> indexSets);
@@ -43,11 +46,22 @@ public class RebuildIndexRangesJob extends SystemJob {
     private static final int MAX_CONCURRENCY = 1;
 
     private volatile boolean cancelRequested = false;
+
+    /**
+     * 代表有多少需要处理
+     */
     private volatile int indicesToCalculate = 0;
     private final AtomicInteger indicesCalculated = new AtomicInteger(0);
 
+    /**
+     * 表示需要被重建的一组索引集
+     */
     protected final Set<IndexSet> indexSets;
     private final ActivityWriter activityWriter;
+
+    /**
+     * 用于查询 索引集range的服务
+     */
     protected final IndexRangeService indexRangeService;
 
     @AssistedInject
@@ -59,6 +73,9 @@ public class RebuildIndexRangesJob extends SystemJob {
         this.indexRangeService = indexRangeService;
     }
 
+    /**
+     * 表示终止任务  execute中每次循环都会检测该标识
+     */
     @Override
     public void requestCancel() {
         this.cancelRequested = true;
@@ -79,12 +96,18 @@ public class RebuildIndexRangesJob extends SystemJob {
         return "Rebuilds index range information.";
     }
 
+    /**
+     * 执行重建索引范围的任务
+     */
     @Override
     public void execute() {
         info("Recalculating index ranges.");
 
         // for each index set we know about
+        // 设置每个索引集相关的所有索引名
         final ListMultimap<IndexSet, String> indexSets = MultimapBuilder.hashKeys().arrayListValues().build();
+
+        // 遍历需要被重建的索引集
         for (IndexSet indexSet : this.indexSets) {
             final String[] managedIndicesNames = indexSet.getManagedIndices();
             for (String name : managedIndicesNames) {
@@ -105,9 +128,14 @@ public class RebuildIndexRangesJob extends SystemJob {
                     indexSet.getIndexWildcard(),
                     indexSets.get(indexSet).size());
             for (String index : indexSets.get(indexSet)) {
+
+                // 遍历每个索引
                 try {
+                    // 如果是正在写入的索引 不需要处理
                     if (index.equals(indexSet.getActiveWriteIndex())) {
                         LOG.debug("{} is current write target, do not calculate index range for it", index);
+
+                        // 保证正在写入的索引range信息为空
                         final IndexRange emptyRange = indexRangeService.createUnknownRange(index);
                         try {
                             final IndexRange indexRange = indexRangeService.get(index);
@@ -135,6 +163,7 @@ public class RebuildIndexRangesJob extends SystemJob {
                 }
 
                 try {
+                    // 基于统计信息产生最准确的range对象 并覆盖原对象
                     final IndexRange indexRange = indexRangeService.calculateRange(index);
                     indexRangeService.save(indexRange);
                     LOG.info("Created ranges for index {}: {}", index, indexRange);

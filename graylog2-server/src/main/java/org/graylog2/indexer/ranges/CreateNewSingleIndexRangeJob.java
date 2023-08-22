@@ -28,6 +28,9 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * 用于产生新的range对象
+ */
 public class CreateNewSingleIndexRangeJob extends RebuildIndexRangesJob {
     private static final Logger LOG = LoggerFactory.getLogger(CreateNewSingleIndexRangeJob.class);
     private final String indexName;
@@ -70,6 +73,7 @@ public class CreateNewSingleIndexRangeJob extends RebuildIndexRangesJob {
         }
         LOG.info("Calculating ranges for index {}.", indexName);
         try {
+            // 从存储引擎拿到索引的统计信息 并生成新的range后 存储到mongodb中
             final IndexRange indexRange = indexRangeService.calculateRange(indexName);
             indexRangeService.save(indexRange);
             LOG.info("Created ranges for index {}.", indexName);

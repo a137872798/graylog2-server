@@ -34,7 +34,15 @@ import java.util.Map;
 public class SystemMessageActivityWriter implements ActivityWriter {
 
     private static final Logger LOG = LoggerFactory.getLogger(SystemMessageActivityWriter.class);
+
+    /**
+     * 可以存储和检索系统消息的服务 底层也是mongodb
+     */
     private final SystemMessageService systemMessageService;
+
+    /**
+     * 该对象可以看作是服务器的一个开关
+     */
     private final ServerStatus serverStatus;
 
     @Inject
@@ -42,7 +50,7 @@ public class SystemMessageActivityWriter implements ActivityWriter {
         this.systemMessageService = systemMessageService;
         this.serverStatus = serverStatus;
     }
-    
+
     @Override
     public void write(Activity activity) {
         try {
@@ -58,5 +66,5 @@ public class SystemMessageActivityWriter implements ActivityWriter {
             LOG.error("Could not write activity.", e);
         }
     }
-    
+
 }

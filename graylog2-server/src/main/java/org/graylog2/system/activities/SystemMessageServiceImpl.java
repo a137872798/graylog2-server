@@ -32,6 +32,9 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 描述系统消息 也是存储在mongodb中
+ */
 @Singleton
 public class SystemMessageServiceImpl extends PersistedServiceImpl implements SystemMessageService {
     private static final int MAX_COLLECTION_BYTES = 50 * 1024 * 1024;
@@ -49,10 +52,16 @@ public class SystemMessageServiceImpl extends PersistedServiceImpl implements Sy
                     .add("size", MAX_COLLECTION_BYTES)
                     .get();
             final DBCollection collection = mongoConnection.getDatabase().createCollection(collectionName, options);
+            // 基于时间戳创建索引
             collection.createIndex(DBSort.desc("timestamp"));
         }
     }
 
+    /**
+     * 返回某一页所有对象
+     * @param page
+     * @return
+     */
     @Override
     public List<SystemMessage> all(int page) {
         List<SystemMessage> messages = Lists.newArrayList();
