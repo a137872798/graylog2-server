@@ -23,6 +23,13 @@ import org.graylog2.plugin.streams.StreamRule;
  * @author Dennis Oelkers <dennis@torch.sh>
  */
 public class FieldPresenceMatcher implements StreamRuleMatcher {
+
+    /**
+     * 只要求msg中有rule指定的field就可以了
+     * @param msg
+     * @param rule
+     * @return
+     */
     @Override
     public boolean match(Message msg, StreamRule rule) {
         Object rawField = msg.getField(rule.getField());

@@ -25,8 +25,19 @@ import javax.inject.Inject;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * output路由器对象
+ */
 public class OutputRouter {
+
+    /**
+     * 表示默认的消息输出点
+     */
     private final MessageOutput defaultMessageOutput;
+
+    /**
+     * 该对象内部包含 output工厂 可以触发惰性创建
+     */
     private final OutputRegistry outputRegistry;
 
     @Inject
@@ -36,6 +47,11 @@ public class OutputRouter {
         this.outputRegistry = outputRegistry;
     }
 
+    /**
+     * 加载该stream相关的所有output
+     * @param stream
+     * @return
+     */
     protected Set<MessageOutput> getMessageOutputsForStream(Stream stream) {
         Set<MessageOutput> result = new HashSet<>();
         for (Output output : stream.getOutputs()) {
@@ -55,6 +71,11 @@ public class OutputRouter {
         return result;
     }
 
+    /**
+     * 收集该mesg相关的所有output
+     * @param msg
+     * @return
+     */
     public Set<MessageOutput> getStreamOutputsForMessage(final Message msg) {
         final Set<MessageOutput> result = new HashSet<>();
 

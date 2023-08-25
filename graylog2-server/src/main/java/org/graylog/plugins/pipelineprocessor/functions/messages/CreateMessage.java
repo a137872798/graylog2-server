@@ -51,8 +51,11 @@ public class CreateMessage extends AbstractFunction<Message> {
 
     @Override
     public Message evaluate(FunctionArgs args, EvaluationContext context) {
+        // 从参数中获取message
         final Optional<String> optMessage = messageParam.optional(args, context);
         final String message = optMessage.isPresent() ? optMessage.get() : context.currentMessage().getMessage();
+
+        // 获取source和timestamp字段 合并成message对象
 
         final Optional<String> optSource = sourceParam.optional(args, context);
         final String source = optSource.isPresent() ? optSource.get() : context.currentMessage().getSource();

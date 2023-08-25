@@ -28,9 +28,13 @@ import java.util.SortedSet;
 
 public class StageIterator extends AbstractIterator<List<Stage>> {
 
+    /**
+     * 内部记录了stage信息
+     */
     private final Configuration config;
 
     // the currentStage is always one before the next one to be returned
+    // 记录了从哪一个stage开始
     private int currentStage;
 
 
@@ -44,6 +48,9 @@ public class StageIterator extends AbstractIterator<List<Stage>> {
         currentStage = config.initialStage();
     }
 
+    /**
+     * 每次返回序号相同的所有stage
+     */
     @Override
     protected List<Stage> computeNext() {
         if (currentStage == config.lastStage()) {
@@ -66,6 +73,10 @@ public class StageIterator extends AbstractIterator<List<Stage>> {
 
         private final int initialStage;
 
+        /**
+         * 使用一组管道进行初始化
+         * @param pipelines
+         */
         public Configuration(Set<Pipeline> pipelines) {
             if (pipelines.isEmpty()) {
                 initialStage = extent[0] = extent[1] = 0;
@@ -79,6 +90,8 @@ public class StageIterator extends AbstractIterator<List<Stage>> {
                 }
                 extent[0] = Math.min(extent[0], stages.first().stage());
                 extent[1] = Math.max(extent[1], stages.last().stage());
+
+                // 把步骤序号和步骤本身添加到map中
                 stages.forEach(stage -> stageMultimap.put(stage.stage(), stage));
             });
 

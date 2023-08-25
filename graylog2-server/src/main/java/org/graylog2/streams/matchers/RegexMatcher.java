@@ -35,6 +35,8 @@ public class RegexMatcher implements StreamRuleMatcher {
     private static final Logger LOG = LoggerFactory.getLogger(RegexMatcher.class);
 
     private static final long CACHESIZE = 1000;
+
+    // 缓存正则对象
     private static final LoadingCache<String, Pattern> patternCache = CacheBuilder.newBuilder().maximumSize(CACHESIZE).build(new CacheLoader<String, Pattern>() {
         @Override
         public Pattern load(String key) throws Exception {
@@ -42,6 +44,12 @@ public class RegexMatcher implements StreamRuleMatcher {
         }
     });
 
+    /**
+     * 判断msg的字段是否匹配 rule中指定的正则
+     * @param msg
+     * @param rule
+     * @return
+     */
     @Override
     public boolean match(Message msg, StreamRule rule) {
         if (msg.getField(rule.getField()) == null)

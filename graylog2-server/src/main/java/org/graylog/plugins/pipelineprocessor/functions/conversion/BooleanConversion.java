@@ -27,6 +27,9 @@ import static com.google.common.collect.ImmutableList.of;
 import static org.graylog.plugins.pipelineprocessor.ast.functions.ParameterDescriptor.bool;
 import static org.graylog.plugins.pipelineprocessor.ast.functions.ParameterDescriptor.object;
 
+/**
+ * 用于将参数转换成boolean类型
+ */
 public class BooleanConversion extends AbstractFunction<Boolean> {
     public static final String NAME = "to_bool";
 
@@ -35,14 +38,17 @@ public class BooleanConversion extends AbstractFunction<Boolean> {
 
 
     public BooleanConversion() {
+        // 描述参数名 以及类型
         valueParam = object("value").primary().description("Value to convert").build();
         defaultParam = bool("default").optional().description("Used when 'value' is null, defaults to false").build();
     }
 
     @Override
     public Boolean evaluate(FunctionArgs args, EvaluationContext context) {
+        // 从args中获取value
         final Object value = valueParam.required(args, context);
         if (value == null) {
+            // 获取默认值
             return defaultParam.optional(args, context).orElse(false);
         }
         return Boolean.parseBoolean(String.valueOf(value));

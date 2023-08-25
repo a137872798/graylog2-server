@@ -19,6 +19,9 @@ package org.graylog.plugins.pipelineprocessor.ast.expressions;
 import org.antlr.v4.runtime.Token;
 import org.graylog.plugins.pipelineprocessor.EvaluationContext;
 
+/**
+ * 二元表达式 表示 同时满足2个子表达式
+ */
 public class AndExpression extends BinaryExpression implements LogicalExpression {
     public AndExpression(Token start, Expression left,
                          Expression right) {
@@ -32,6 +35,7 @@ public class AndExpression extends BinaryExpression implements LogicalExpression
 
     @Override
     public boolean evaluateBool(EvaluationContext context) {
+        // 能够被and表示的2个expression 必然都可以得到一个boolean结果
         return ((LogicalExpression)left).evaluateBool(context) && ((LogicalExpression)right).evaluateBool(context);
     }
 

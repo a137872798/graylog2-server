@@ -19,6 +19,9 @@ package org.graylog.plugins.pipelineprocessor.ast.statements;
 import org.graylog.plugins.pipelineprocessor.EvaluationContext;
 import org.graylog.plugins.pipelineprocessor.ast.expressions.Expression;
 
+/**
+ * 执行表达式 得到一个参数值 并设置到context中
+ */
 public class VarAssignStatement implements Statement {
     private final String name;
     private final Expression expr;

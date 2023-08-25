@@ -23,6 +23,9 @@ import org.joda.time.DateTime;
 
 import static org.graylog.plugins.pipelineprocessor.processors.PipelineInterpreter.getRateLimitedLog;
 
+/**
+ *  ==  !=
+ */
 public class EqualityExpression extends BinaryExpression implements LogicalExpression {
     private static final RateLimitedLog log = getRateLimitedLog(EqualityExpression.class);
 

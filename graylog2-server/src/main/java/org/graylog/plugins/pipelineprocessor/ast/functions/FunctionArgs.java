@@ -33,11 +33,25 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 
 public class FunctionArgs {
 
+    /**
+     * 对文本进行分词解析后 产生了一组表达式 并且每个表达式还是树形结构
+     */
     @Nonnull
     private final Map<String, Expression> args;
 
+    /**
+     * 存储一些常量字段
+     */
     private final Map<String, Object> constantValues = Maps.newHashMap();
+
+    /**
+     * 表达式会作为函数的参数
+     */
     private final Function function;
+
+    /**
+     * 该function 可能会对一些参数有类型要求  描述信息都包含在内
+     */
     private final FunctionDescriptor descriptor;
 
     public FunctionArgs(Function func, Map<String, Expression> args) {
@@ -51,6 +65,10 @@ public class FunctionArgs {
         return args;
     }
 
+    /**
+     * 仅过滤出所有常量表达式
+     * @return
+     */
     @Nonnull
     public Map<String, Expression> getConstantArgs() {
         return args.entrySet().stream()
@@ -72,6 +90,11 @@ public class FunctionArgs {
         return constantValues.get(name);
     }
 
+    /**
+     * 对常量参数进行预处理后 设置到constantValues中
+     * @param name
+     * @param value
+     */
     public void setPreComputedValue(@Nonnull String name, @Nonnull Object value) {
         Objects.requireNonNull(value);
         constantValues.put(name, value);

@@ -50,6 +50,9 @@ import java.util.stream.Collectors;
 import static org.graylog.plugins.pipelineprocessor.processors.PipelineInterpreter.getRateLimitedLog;
 import static org.graylog2.shared.rest.documentation.generator.Generator.CLOUD_VISIBLE;
 
+/**
+ * 提供PipelineConnection相关的Rest服务   PipelineConnections 提供了stream与pipeline的关联关系
+ */
 @Api(value = "Pipelines/Connections", description = "Stream connections of processing pipelines", tags = {CLOUD_VISIBLE})
 @Path("/system/pipelines/connections")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -58,6 +61,7 @@ import static org.graylog2.shared.rest.documentation.generator.Generator.CLOUD_V
 public class PipelineConnectionsResource extends RestResource implements PluginRestResource {
     private static final RateLimitedLog LOG = getRateLimitedLog(PipelineConnectionsResource.class);
 
+    // 暴露mongodb服务
     private final PipelineStreamConnectionsService connectionsService;
     private final PipelineService pipelineService;
     private final StreamService streamService;

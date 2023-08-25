@@ -18,6 +18,9 @@ package org.graylog.plugins.pipelineprocessor.ast.expressions;
 
 import org.graylog.plugins.pipelineprocessor.EvaluationContext;
 
+/**
+ * 逻辑表达式 表示计算结果是一个boolean类型
+ */
 public interface LogicalExpression extends Expression {
 
     boolean evaluateBool(EvaluationContext context);

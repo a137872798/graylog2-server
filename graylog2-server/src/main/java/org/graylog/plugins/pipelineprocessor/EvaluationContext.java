@@ -37,6 +37,9 @@ import java.util.Map;
 import static org.graylog2.shared.utilities.ExceptionUtils.getRootCause;
 import static org.graylog2.shared.utilities.StringUtils.f;
 
+/**
+ * 一个评估/计算用的上下文对象
+ */
 public class EvaluationContext {
 
     private static final EvaluationContext EMPTY_CONTEXT = new EvaluationContext() {
@@ -51,12 +54,21 @@ public class EvaluationContext {
         }
     };
 
+    /**
+     * 描述被计算的消息体
+     */
     @Nonnull
     private final Message message;
+    /**
+     * 描述某个类型以及数值
+     */
     @Nullable
     private Map<String, TypedValue> ruleVars;
     @Nullable
     private List<Message> createdMessages;
+    /**
+     * 记录调用函数产生的各种错误
+     */
     @Nullable
     private List<EvalError> evalErrors;
     @Nullable
@@ -78,6 +90,12 @@ public class EvaluationContext {
         this.message = message;
     }
 
+    /**
+     * 追加某个类型的参数
+     * @param identifier
+     * @param type
+     * @param value
+     */
     public void define(String identifier, Class type, Object value) {
         if (ruleVars == null) {
             ruleVars = Maps.newHashMap();
@@ -89,6 +107,11 @@ public class EvaluationContext {
         return message;
     }
 
+    /**
+     * 获取某个参数
+     * @param identifier
+     * @return
+     */
     public TypedValue get(String identifier) {
         if (ruleVars == null) {
             throw new IllegalStateException("Use of undeclared variable " + identifier);
@@ -96,6 +119,10 @@ public class EvaluationContext {
         return ruleVars.get(identifier);
     }
 
+    /**
+     * 返回createdMessages   createdMessages存储了在计算过程中衍生出的各种消息  之前为message添加静态字段，字段抽取 只是为了后面做准备
+     * @return
+     */
     public Messages createdMessages() {
         if (createdMessages == null) {
             return new EmptyMessages();
@@ -103,6 +130,10 @@ public class EvaluationContext {
         return new MessageCollection(createdMessages);
     }
 
+    /**
+     * 追加一个message
+     * @param newMessage
+     */
     public void addCreatedMessage(Message newMessage) {
         if (createdMessages == null) {
             createdMessages = Lists.newArrayList();
@@ -110,6 +141,9 @@ public class EvaluationContext {
         createdMessages.add(newMessage);
     }
 
+    /**
+     * 清空创建的所有消息
+     */
     public void clearCreatedMessages() {
         if (createdMessages != null) {
             createdMessages.clear();
@@ -120,6 +154,13 @@ public class EvaluationContext {
         return EMPTY_CONTEXT;
     }
 
+    /**
+     * 记录失败函数作用的行列 以及函数的描述信息
+     * @param line
+     * @param charPositionInLine
+     * @param descriptor
+     * @param e
+     */
     public void addEvaluationError(int line, int charPositionInLine, @Nullable FunctionDescriptor descriptor, Throwable e) {
         if (evalErrors == null) {
             evalErrors = Lists.newArrayList();
@@ -127,7 +168,13 @@ public class EvaluationContext {
         evalErrors.add(new EvalError(line, charPositionInLine, descriptor, e));
     }
 
+    /**
+     * 当在计算过程中产生异常时  触发该方法
+     * @param exception
+     * @param expression
+     */
     public void onEvaluationException(Exception exception, Expression expression) {
+        // 发现异常是 FunctionEvaluationException 类型的
         if (exception instanceof FunctionEvaluationException) {
             final FunctionEvaluationException fee = (FunctionEvaluationException) exception;
             addEvaluationError(fee.getStartToken().getLine(),
@@ -135,6 +182,7 @@ public class EvaluationContext {
                     fee.getFunctionExpression().getFunction().descriptor(),
                     getRootCause(fee));
         } else {
+            // 普通异常 没有descriptor信息
             addEvaluationError(
                     expression.getStartToken().getLine(),
                     expression.getStartToken().getCharPositionInLine(),
@@ -151,6 +199,10 @@ public class EvaluationContext {
         return evalErrors == null ? Collections.emptyList() : Collections.unmodifiableList(evalErrors);
     }
 
+    /**
+     * 获取最后一个计算异常信息
+     * @return
+     */
     @Nullable
     public EvalError lastEvaluationError() {
         return evalErrors == null || evalErrors.isEmpty() ? null
@@ -176,8 +228,14 @@ public class EvaluationContext {
     }
 
     public static class EvalError {
+
+        // 描述第几行第几列
         private final int line;
         private final int charPositionInLine;
+
+        /**
+         * 描述调用的函数信息
+         */
         @Nullable
         private final FunctionDescriptor descriptor;
         private final Throwable throwable;

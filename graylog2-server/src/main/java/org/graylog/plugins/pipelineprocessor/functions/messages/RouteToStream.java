@@ -88,6 +88,8 @@ public class RouteToStream extends AbstractFunction<Void> {
                 message.addStream(stream);
             }
         });
+
+        // 代表需要移除defaultStream
         if (removeFromDefault.optional(args, context).orElse(Boolean.FALSE)) {
             message.removeStream(defaultStreamProvider.get());
         }

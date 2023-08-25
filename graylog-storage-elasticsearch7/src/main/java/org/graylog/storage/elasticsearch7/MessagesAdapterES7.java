@@ -55,6 +55,9 @@ import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 与ES的接入层
+ */
 public class MessagesAdapterES7 implements MessagesAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(MessagesAdapterES7.class);
     static final String INDEX_BLOCK_ERROR = "cluster_block_exception";
@@ -67,6 +70,9 @@ public class MessagesAdapterES7 implements MessagesAdapter {
     static final String ILLEGAL_ARGUMENT_EXCEPTION = "illegal_argument_exception";
     static final String NO_WRITE_INDEX_DEFINED_FOR_ALIAS = "no write index is defined for alias";
 
+    /**
+     * ES 客户端
+     */
     private final ElasticsearchClient client;
     private final Meter invalidTimestampMeter;
     private final ChunkedBulkIndexer chunkedBulkIndexer;
@@ -93,6 +99,13 @@ public class MessagesAdapterES7 implements MessagesAdapter {
         return ResultMessage.parseFromSource(messageId, index, result.getSource());
     }
 
+    /**
+     * 借助 ES的分词器 完成分词
+     * @param toAnalyze
+     * @param index
+     * @param analyzer
+     * @return
+     */
     @Override
     public List<String> analyze(String toAnalyze, String index, String analyzer) {
         final AnalyzeRequest analyzeRequest = AnalyzeRequest.withIndexAnalyzer(index, analyzer, toAnalyze);
@@ -103,11 +116,24 @@ public class MessagesAdapterES7 implements MessagesAdapter {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 批量写入数据
+     * @param messageList
+     * @return
+     * @throws IOException
+     */
     @Override
     public List<Messages.IndexingError> bulkIndex(List<IndexingRequest> messageList) throws IOException {
+        // 将messageList 转换成一个Chunk 并触发bulkIndexChunked
         return chunkedBulkIndexer.index(messageList, this::bulkIndexChunked);
     }
 
+    /**
+     * 批量写入数据
+     * @param command
+     * @return
+     * @throws ChunkedBulkIndexer.EntityTooLargeException
+     */
     private List<Messages.IndexingError> bulkIndexChunked(ChunkedBulkIndexer.Chunk command) throws ChunkedBulkIndexer.EntityTooLargeException {
         final List<IndexingRequest> messageList = command.requests;
         final int offset = command.offset;
@@ -117,18 +143,22 @@ public class MessagesAdapterES7 implements MessagesAdapter {
             return Collections.emptyList();
         }
 
+        // 拆分获取子chunk
         final Iterable<List<IndexingRequest>> chunks = Iterables.partition(messageList.subList(offset, messageList.size()), chunkSize);
         int chunkCount = 1;
         int indexedSuccessfully = 0;
         final List<Messages.IndexingError> indexFailures = new ArrayList<>();
         for (List<IndexingRequest> chunk : chunks) {
 
+            // 发送请求
             final BulkResponse result = runBulkRequest(indexedSuccessfully, chunk);
 
             indexedSuccessfully += chunk.size();
 
+            // 找到发送失败的请求
             final List<BulkItemResponse> failures = extractFailures(result);
 
+            // 产生错误并加入到list
             indexFailures.addAll(indexingErrorsFrom(failures, messageList));
 
             logDebugInfo(messageList, offset, chunkSize, chunkCount, result, failures);
@@ -166,6 +196,13 @@ public class MessagesAdapterES7 implements MessagesAdapter {
         }
     }
 
+    /**
+     * 发送请求
+     * @param indexedSuccessfully
+     * @param chunk
+     * @return
+     * @throws ChunkedBulkIndexer.EntityTooLargeException
+     */
     private BulkResponse runBulkRequest(int indexedSuccessfully, List<IndexingRequest> chunk) throws ChunkedBulkIndexer.EntityTooLargeException {
         final BulkRequest bulkRequest = createBulkRequest(chunk);
 
@@ -204,6 +241,12 @@ public class MessagesAdapterES7 implements MessagesAdapter {
         return Messages.IndexingError.create(indexingRequest.message(), indexingRequest.indexSet().getWriteIndexAlias());
     }
 
+    /**
+     *
+     * @param failedItems
+     * @param messageList
+     * @return
+     */
     private List<Messages.IndexingError> indexingErrorsFrom(List<BulkItemResponse> failedItems, List<IndexingRequest> messageList) {
         if (failedItems.isEmpty()) {
             return Collections.emptyList();
@@ -253,6 +296,7 @@ public class MessagesAdapterES7 implements MessagesAdapter {
         }
         return new IndexRequest(request.indexSet().getWriteIndexAlias())
                 .id(request.message().getId())
+                // 存储的是json格式的文本
                 .source(body, XContentType.JSON);
     }
 }

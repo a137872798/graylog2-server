@@ -26,6 +26,13 @@ import org.graylog.plugins.pipelineprocessor.ast.expressions.Expression;
  */
 public abstract class AbstractFunction<T> implements Function<T> {
 
+    /**
+     * 常量表达式直接调用 evaluateUnsafe 一般就能得到一个常量结果
+     * @param args the function args for this functions, usually you don't need this
+     * @param name the name of the argument to potentially precompute
+     * @param arg the expression tree for the argument
+     * @return
+     */
     @Override
     public Object preComputeConstantArgument(FunctionArgs args, String name, Expression arg) {
         return arg.evaluateUnsafe(EvaluationContext.emptyContext());

@@ -23,6 +23,9 @@ import org.graylog2.rest.resources.search.responses.SearchResponse;
 
 import java.util.function.Function;
 
+/**
+ * 代表查询结果的装饰器
+ */
 @FunctionalInterface
 public interface SearchResponseDecorator extends Function<SearchResponse, SearchResponse> {
     interface Factory {

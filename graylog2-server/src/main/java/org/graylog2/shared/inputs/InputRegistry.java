@@ -28,6 +28,9 @@ import javax.inject.Singleton;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * MessageInput 可以产生并发送message IOState 描述input的状态
+ */
 @Singleton
 public class InputRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(InputRegistry.class);

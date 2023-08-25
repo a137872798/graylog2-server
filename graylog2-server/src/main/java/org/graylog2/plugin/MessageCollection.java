@@ -23,6 +23,9 @@ import com.google.common.collect.Iterators;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * 代表一个消息集合
+ */
 public class MessageCollection implements Messages  {
 
     private final ImmutableList<Message> messages;

@@ -51,9 +51,11 @@ import java.util.stream.Collectors;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-// Singleton class
+// Singleton class  代表支持数据大块写入
 public class BlockingBatchedESOutput extends ElasticSearchOutput {
     private static final Logger log = LoggerFactory.getLogger(BlockingBatchedESOutput.class);
+
+    // 到超过size时 触发写入
     private final int maxBufferSize;
     private final Timer processTime;
     private final Histogram batchSize;
@@ -64,6 +66,7 @@ public class BlockingBatchedESOutput extends ElasticSearchOutput {
     private final int shutdownTimeoutMs;
     private final ScheduledExecutorService daemonScheduler;
 
+    // 缓存消息 并批量写入 用于提高性能
     private volatile List<Map.Entry<IndexSet, Message>> buffer;
 
     private static final AtomicInteger activeFlushThreads = new AtomicInteger(0);
@@ -96,11 +99,17 @@ public class BlockingBatchedESOutput extends ElasticSearchOutput {
 
     @Override
     public void write(Message message) throws Exception {
+        // 在message经过 stream路由器的时候 会将该命中的所有stream的indexSet添加到message中
         for (IndexSet indexSet : message.getIndexSets()) {
             writeMessageEntry(Maps.immutableEntry(indexSet, message));
         }
     }
 
+    /**
+     * 以每个索引集和关联的message为单位进行写入
+     * @param entry
+     * @throws Exception
+     */
     public void writeMessageEntry(Map.Entry<IndexSet, Message> entry) throws Exception {
         List<Map.Entry<IndexSet, Message>> flushBatch = null;
         synchronized (this) {
@@ -119,6 +128,10 @@ public class BlockingBatchedESOutput extends ElasticSearchOutput {
         }
     }
 
+    /**
+     * 刷盘数据
+     * @param messages
+     */
     private void flush(List<Map.Entry<IndexSet, Message>> messages) {
         // never try to flush an empty buffer
         if (messages.isEmpty()) {
@@ -183,6 +196,7 @@ public class BlockingBatchedESOutput extends ElasticSearchOutput {
             flushTask.cancel(false);
         }
 
+        // TODO 先忽略集群
         if (cluster.isConnected() && cluster.isDeflectorHealthy()) {
             // Try to flush current batch. Time-limited to avoid blocking shutdown too long.
             final ExecutorService executorService = Executors.newSingleThreadExecutor(
@@ -202,8 +216,13 @@ public class BlockingBatchedESOutput extends ElasticSearchOutput {
         super.stop();
     }
 
+    /**
+     * 当output对象被工厂生成后 需要调用该方法进行初始化
+     * @throws Exception
+     */
     @Override
     public void initialize() throws Exception {
+        // 开启后台任务进行定时刷盘
         this.flushTask = daemonScheduler.scheduleAtFixedRate(() -> {
                     try {
                         forceFlushIfTimedout();

@@ -54,21 +54,43 @@ import java.util.stream.Collectors;
 import static com.codahale.metrics.MetricRegistry.name;
 import static org.graylog.plugins.pipelineprocessor.processors.PipelineInterpreter.getRateLimitedLog;
 
+/**
+ * 该对象负责定期更新 State对象  state记录了每个stream关联的pipeline 每个pipeline会关联一组stage 每个stage包含表达式以及statement 用于处理数据
+ */
 @Singleton
 public class ConfigurationStateUpdater {
     private static final RateLimitedLog log = getRateLimitedLog(ConfigurationStateUpdater.class);
 
+    /**
+     * 通过mongodb提供ruleDao的CRUD
+     */
     private final RuleService ruleService;
+    /**
+     * 提供pipeline的CRUD
+     */
     private final PipelineService pipelineService;
+    /**
+     * 提供PipelineConnections的CRUD
+     */
     private final PipelineStreamConnectionsService pipelineStreamConnectionsService;
+
+    /**
+     * 该对象与antlr4交互 可以解析rule和pipeline
+     */
     private final PipelineRuleParser pipelineRuleParser;
+    /**
+     * TODO Metrics 相关的先忽略
+     */
     private final RuleMetricsConfigService ruleMetricsConfigService;
     private final MetricRegistry metricRegistry;
     private final ScheduledExecutorService scheduler;
     private final EventBus serverEventBus;
+
+    // 该工厂可以产生一个状态对象
     private final PipelineInterpreter.State.Factory stateFactory;
     /**
      * non-null if the update has successfully loaded a state
+     * 本对象就是负责更新 State 的
      */
     private final AtomicReference<PipelineInterpreter.State> latestState = new AtomicReference<>();
 
@@ -100,9 +122,13 @@ public class ConfigurationStateUpdater {
 
     // only the singleton instance should mutate itself, others are welcome to reload a new state, but we don't
     // currently allow direct global state updates from external sources (if you need to, send an event on the bus instead)
+    // 更新 state
     private synchronized PipelineInterpreter.State reloadAndSave() {
         // read all rules and parse them
+        // 加载的表达式 会被解析成Rule对象
         Map<String, Rule> ruleNameMap = Maps.newHashMap();
+
+        // 加载系统中所有的 rule
         ruleService.loadAll().forEach(ruleDao -> {
             Rule rule;
             try {
@@ -115,6 +141,7 @@ public class ConfigurationStateUpdater {
         });
 
         // read all pipelines and parse them
+        // 解析 pipeline
         ImmutableMap.Builder<String, Pipeline> pipelineIdMap = ImmutableMap.builder();
         pipelineService.loadAll().forEach(pipelineDao -> {
             Pipeline pipeline;
@@ -123,14 +150,17 @@ public class ConfigurationStateUpdater {
             } catch (ParseException e) {
                 pipeline = Pipeline.empty("Failed to parse pipeline" + pipelineDao.id());
             }
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
+            // pipeline内记录了关联的rule的name 这里是去map中根据name查询rule对象 并进行关联
             pipelineIdMap.put(pipelineDao.id(), resolvePipeline(pipeline, ruleNameMap));
         });
 
         final ImmutableMap<String, Pipeline> currentPipelines = pipelineIdMap.build();
 
         // read all stream connections of those pipelines to allow processing messages through them
+        // 这里负责把 stream 与 pipeline 关联起来
         final HashMultimap<String, Pipeline> connections = HashMultimap.create();
+
         for (PipelineConnections streamConnection : pipelineStreamConnectionsService.loadAll()) {
             streamConnection.pipelineIds().stream()
                     .map(currentPipelines::get)
@@ -140,6 +170,8 @@ public class ConfigurationStateUpdater {
         ImmutableSetMultimap<String, Pipeline> streamPipelineConnections = ImmutableSetMultimap.copyOf(connections);
 
         final RuleMetricsConfigDto ruleMetricsConfig = ruleMetricsConfigService.get();
+
+        // 通过这些参数来构造state对象
         final PipelineInterpreter.State newState = stateFactory.newState(currentPipelines, streamPipelineConnections, ruleMetricsConfig);
         latestState.set(newState);
         return newState;
@@ -156,6 +188,13 @@ public class ConfigurationStateUpdater {
         return latestState.get();
     }
 
+
+    /**
+     *
+     * @param pipeline
+     * @param ruleNameMap
+     * @return
+     */
     @Nonnull
     private Pipeline resolvePipeline(Pipeline pipeline, Map<String, Rule> ruleNameMap) {
         log.debug("Resolving pipeline {}", pipeline.name());
@@ -175,6 +214,7 @@ public class ConfigurationStateUpdater {
                         return rule;
                     })
                     .collect(Collectors.toList());
+            // 将stage与rules pipeline 关联起来
             stage.setRules(resolvedRules);
             stage.setPipeline(pipeline);
             stage.registerMetrics(metricRegistry, pipeline.id());
@@ -183,6 +223,8 @@ public class ConfigurationStateUpdater {
         pipeline.registerMetrics(metricRegistry);
         return pipeline;
     }
+
+    // 下面是监听pipeline，rule的更新事件
 
     // TODO avoid reloading everything on every change, certain changes can get away with doing less work
     @Subscribe

@@ -22,7 +22,14 @@ import org.graylog2.plugin.Message;
 
 import java.util.Collections;
 
+/**
+ * 该表达式是一个message的引用
+ */
 public class MessageRefExpression extends BaseExpression {
+
+    /**
+     * 代表要抽取message的某个字段
+     */
     private final Expression fieldExpr;
 
     public MessageRefExpression(Token start, Expression fieldExpr) {
@@ -37,13 +44,19 @@ public class MessageRefExpression extends BaseExpression {
 
     @Override
     public Object evaluateUnsafe(EvaluationContext context) {
+
+        // 没有指定抽取字段的情况 直接返回整个消息
         if (fieldExpr == null) {
             return context.currentMessage();
         }
+
+        // 计算得到字段名
         final Object fieldName = fieldExpr.evaluateUnsafe(context);
         if (fieldName == null) {
             return null;
         }
+
+        // 获取message的该字段
         return context.currentMessage().getField(fieldName.toString());
     }
 

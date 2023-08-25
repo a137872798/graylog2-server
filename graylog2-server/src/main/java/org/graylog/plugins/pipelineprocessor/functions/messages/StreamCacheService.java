@@ -40,6 +40,9 @@ import java.util.concurrent.TimeUnit;
 @Singleton
 public class StreamCacheService extends AbstractIdleService {
     private final EventBus eventBus;
+    /**
+     * 通过该对象可以操纵流
+     */
     private final StreamService streamService;
     private final ScheduledExecutorService executorService;
 
@@ -80,6 +83,9 @@ public class StreamCacheService extends AbstractIdleService {
         return idToStream.get(id);
     }
 
+    /**
+     * 加载所有可用stream 并添加到map中
+     */
     @VisibleForTesting
     public void updateStreams() {
         final SetMultimap<String, Stream> streamsByName = MultimapBuilder.hashKeys().hashSetValues().build();

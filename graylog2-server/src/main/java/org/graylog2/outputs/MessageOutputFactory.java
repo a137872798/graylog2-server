@@ -28,9 +28,13 @@ import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 该对象用于生成 MessageOutput
+ */
 public class MessageOutputFactory {
     // We have two output lists for backwards compatibility.
     // See comments in MessageOutput.Factory and MessageOutput.Factory2 for details
+    // 这些工厂是从guice容器中注入进来的  key 对应output类的全限定名
     private final Map<String, MessageOutput.Factory<? extends MessageOutput>> availableOutputs;
     private final Map<String, MessageOutput.Factory2<? extends MessageOutput>> availableOutputs2;
 
@@ -41,11 +45,20 @@ public class MessageOutputFactory {
         this.availableOutputs2 = availableOutputs2;
     }
 
+    /**
+     * 根据stream和output信息 产生一个 messageOutput对象
+     * @param output
+     * @param stream
+     * @param configuration
+     * @return
+     * @throws MessageOutputConfigurationException
+     */
     public MessageOutput fromStreamOutput(Output output, final Stream stream, Configuration configuration) throws MessageOutputConfigurationException {
         Preconditions.checkNotNull(output);
         Preconditions.checkNotNull(stream);
         Preconditions.checkNotNull(configuration);
 
+        // type 描述的是输出类的全限定名
         final String outputType = output.getType();
         Preconditions.checkArgument(outputType != null);
 
@@ -56,6 +69,8 @@ public class MessageOutputFactory {
 
         // If the same outputType value exists in both output factory maps for some reason, we want to prefer the
         // one that is using the more recent interface.
+
+        // 传入相关参数产生MessageOutput对象
         if (factory2 != null) {
             return factory2.create(output, stream, configuration);
         } else if (factory != null) {
@@ -66,10 +81,16 @@ public class MessageOutputFactory {
     }
 
 
+    /**
+     * 获取所有可用的 output
+     * @return
+     */
     public Map<String, AvailableOutputSummary> getAvailableOutputs() {
         // We have two output lists for backwards compatibility.
         // See comments in MessageOutput.Factory and MessageOutput.Factory2 for details
         final Map<String, AvailableOutputSummary> result = new HashMap<>(availableOutputs.size());
+
+        // 包装产生描述对象
         for (Map.Entry<String, MessageOutput.Factory<? extends MessageOutput>> messageOutputEntry : this.availableOutputs.entrySet()) {
             final MessageOutput.Factory messageOutputFactoryClass = messageOutputEntry.getValue();
             final MessageOutput.Descriptor descriptor = messageOutputFactoryClass.getDescriptor();

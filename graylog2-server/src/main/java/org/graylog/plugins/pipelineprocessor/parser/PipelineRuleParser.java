@@ -106,6 +106,9 @@ import static org.graylog.plugins.pipelineprocessor.processors.PipelineInterpret
 
 public class PipelineRuleParser {
 
+    /**
+     * 维护所有注册的函数
+     */
     private final FunctionRegistry functionRegistry;
 
     private static AtomicLong uniqueId = new AtomicLong(0);
@@ -117,8 +120,18 @@ public class PipelineRuleParser {
 
     private static final RateLimitedLog log = getRateLimitedLog(PipelineRuleParser.class);
 
+    /**
+     * 在使用antlr4 对文本进行解析后  通过walker对象对token进行遍历处理
+     */
     public static final ParseTreeWalker WALKER = ParseTreeWalker.DEFAULT;
 
+    /**
+     * 使用antlr4 解析规则
+     * @param rule
+     * @param silent
+     * @return
+     * @throws ParseException
+     */
     public Rule parseRule(String rule, boolean silent) throws ParseException {
         return parseRule("dummy" + uniqueId.getAndIncrement(), rule, silent);
     }
@@ -154,6 +167,7 @@ public class PipelineRuleParser {
         // 3. checker: static type check w/ coercion nodes
         // 4. optimizer: TODO
 
+        // 分别使用3个walker对象对数据进行处理
         WALKER.walk(new RuleAstBuilder(parseContext), ruleDeclaration);
         WALKER.walk(new RuleTypeAnnotator(parseContext), ruleDeclaration);
         WALKER.walk(new RuleTypeChecker(parseContext), ruleDeclaration);
@@ -187,6 +201,12 @@ public class PipelineRuleParser {
         throw new ParseException(parseContext.getErrors());
     }
 
+    /**
+     * 解析source 产生pipeline
+     * @param id
+     * @param source
+     * @return
+     */
     public Pipeline parsePipeline(String id, String source) {
         final ParseContext parseContext = new ParseContext(false);
         final SyntaxErrorListener errorListener = new SyntaxErrorListener(parseContext);
@@ -223,6 +243,9 @@ public class PipelineRuleParser {
         return StringEscapeUtils.unescapeJava(string);
     }
 
+    /**
+     * BaseErrorListener 是记录解析期间出现的错误信息的
+     */
     private static class SyntaxErrorListener extends BaseErrorListener {
         private final ParseContext parseContext;
 
@@ -242,6 +265,9 @@ public class PipelineRuleParser {
     }
 
 
+    /**
+     * 通过该对象处理经过的token
+     */
     private class RuleAstBuilder extends RuleLangBaseListener {
 
         private final ParseContext parseContext;
@@ -878,8 +904,11 @@ public class PipelineRuleParser {
      * Contains meta data about the parse tree, such as AST nodes, link to the function registry etc.
      *
      * Being used by tree walkers or visitors to perform AST construction, type checking and so on.
+     *
+     * 表示解析rule时使用的上下文
      */
     private static class ParseContext {
+
         private final ParseTreeProperty<Expression> exprs = new ParseTreeProperty<>();
         private final ParseTreeProperty<Map<String, Expression>> args = new ParseTreeProperty<>();
         /**

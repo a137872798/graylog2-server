@@ -21,6 +21,9 @@ import org.graylog.plugins.pipelineprocessor.ast.expressions.Expression;
 
 public class FunctionStatement implements Statement {
 
+    /**
+     * 对参数执行表达式得到结果
+     */
     private final Expression functionExpression;
 
     public FunctionStatement(Expression functionExpression) {

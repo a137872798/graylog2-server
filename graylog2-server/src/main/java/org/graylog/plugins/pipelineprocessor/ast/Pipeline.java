@@ -29,6 +29,9 @@ import javax.annotation.Nullable;
 import java.util.SortedSet;
 import java.util.stream.Stream;
 
+/**
+ * 管道内部包含多个步骤
+ */
 @AutoValue
 public abstract class Pipeline {
 

@@ -32,6 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 该对象会直接丢弃掉收到的消息
+ */
 public class DiscardMessageOutput implements MessageOutput {
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final MessageQueueAcknowledger messageQueueAcknowledger;

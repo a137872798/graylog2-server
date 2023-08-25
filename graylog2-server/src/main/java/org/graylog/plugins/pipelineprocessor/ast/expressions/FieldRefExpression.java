@@ -21,6 +21,9 @@ import org.graylog.plugins.pipelineprocessor.EvaluationContext;
 
 import java.util.Collections;
 
+/**
+ * 就是返回一个变量名
+ */
 public class FieldRefExpression extends BaseExpression {
     private final String variableName;
     private final Expression fieldExpr;

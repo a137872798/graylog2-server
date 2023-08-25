@@ -23,6 +23,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 该对象维护注入guice的所有Function
+ */
 public class FunctionRegistry {
 
     private final Map<String, Function<?>> functions;

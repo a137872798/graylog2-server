@@ -72,13 +72,23 @@ import java.util.stream.Collectors;
 import static com.codahale.metrics.MetricRegistry.name;
 import static org.jooq.lambda.tuple.Tuple.tuple;
 
+/**
+ * 该对象也会作为消息处理器
+ */
 public class PipelineInterpreter implements MessageProcessor {
     private static final RateLimitedLog log = getRateLimitedLog(PipelineInterpreter.class);
 
+    /**
+     * TODO
+     */
     private final MessageQueueAcknowledger messageQueueAcknowledger;
     private final Meter filteredOutMessages;
     private final Timer executionTime;
     private final MetricRegistry metricRegistry;
+
+    /**
+     * 该对象负责更新state
+     */
     private final ConfigurationStateUpdater stateUpdater;
 
     @Inject
@@ -100,6 +110,7 @@ public class PipelineInterpreter implements MessageProcessor {
     @Override
     public Messages process(Messages messages) {
         try (Timer.Context ignored = executionTime.time()) {
+            // 通过updater对象 拿到最新的状态
             final State latestState = stateUpdater.getLatestState();
             if (latestState.enableRuleMetrics()) {
                 return process(messages, new RuleMetricsListener(metricRegistry), latestState);
@@ -121,6 +132,7 @@ public class PipelineInterpreter implements MessageProcessor {
      * @param state               the pipeline/stage/rule/stream connection state to use during
      *                            processing
      * @return the processed messages
+     * 使用state 处理message
      */
     public Messages process(Messages messages, InterpreterListener interpreterListener, State state) {
         interpreterListener.startProcessing();
@@ -135,30 +147,36 @@ public class PipelineInterpreter implements MessageProcessor {
             // we'll add them back below
             toProcess.clear();
 
+            // 遍历处理每个message
             for (Message message : currentSet) {
                 final String msgId = message.getId();
 
                 // this makes a copy of the list, which is mutated later in updateStreamBlacklist
                 // it serves as a worklist, to keep track of which <msg, stream> tuples need to be re-run again
+                // 在之前的processor中 会为message匹配stream  1对多的关系
                 final Set<String> initialStreamIds = message.getStreams().stream().map(Stream::getId).collect(Collectors.toSet());
 
+                // 通过streamId 去匹配一组pipeline
                 final ImmutableSet<Pipeline> pipelinesToRun = selectPipelines(interpreterListener,
                         processingBlacklist,
                         message,
                         initialStreamIds,
                         state.getStreamPipelineConnections());
 
+                // 当消息通过这组pipeline处理后 可能会产生新的message 这样就会进入下轮循环
                 toProcess.addAll(processForResolvedPipelines(message, msgId, pipelinesToRun, interpreterListener, state));
 
                 // add each processed message-stream combination to the blacklist set and figure out if the processing
                 // has added a stream to the message, in which case we need to cycle and determine whether to process
                 // its pipeline connections, too
+                // 这里主要就是将本轮该message相关的所有pipeline去除 避免重复处理
                 boolean addedStreams = updateStreamBlacklist(processingBlacklist,
                         message,
                         initialStreamIds);
                 potentiallyDropFilteredMessage(message);
 
                 // go to 1 and iterate over all messages again until no more streams are being assigned
+                // 没有产生新的流 或者被显示标记成终止 message就不用重复处理了 否则重新加入toProcess
                 if (!addedStreams || message.getFilterOut()) {
                     log.debug("[{}] no new streams matches or dropped message, not running again", msgId);
                     fullyProcessed.add(message);
@@ -184,11 +202,19 @@ public class PipelineInterpreter implements MessageProcessor {
         }
     }
 
-    // given the initial streams the message was on before the processing and its current state, update the set of
-    // <msgid, stream> that should not be run again (which prevents re-running pipelines over and over again)
+    /**
+     * given the initial streams the message was on before the processing and its current state, update the set of
+     * <msgid, stream> that should not be run again (which prevents re-running pipelines over and over again)
+     * @param processingBlacklist     存储黑名单
+     * @param message
+     * @param initialStreamIds        本次相关的所有stream
+     * @return
+     */
     private boolean updateStreamBlacklist(Set<Tuple2<String, String>> processingBlacklist,
                                           Message message,
                                           Set<String> initialStreamIds) {
+
+        // 代表出现了新的stream
         boolean addedStreams = false;
         for (Stream stream : message.getStreams()) {
             if (!initialStreamIds.remove(stream.getId())) {
@@ -202,8 +228,16 @@ public class PipelineInterpreter implements MessageProcessor {
         return addedStreams;
     }
 
-    // determine which pipelines should be executed give the stream-pipeline connections and the current message
-    // the initialStreamIds are not mutated, but are being passed for efficiency, as they are used later in #process()
+    /**
+     * determine which pipelines should be executed give the stream-pipeline connections and the current message
+     * the initialStreamIds are not mutated, but are being passed for efficiency, as they are used later in #process()
+     * @param interpreterListener
+     * @param processingBlacklist
+     * @param message
+     * @param initialStreamIds  本次需要被检索的streamId
+     * @param streamConnection  维护了 streamId -> pipeline 的映射关系
+     * @return
+     */
     private ImmutableSet<Pipeline> selectPipelines(InterpreterListener interpreterListener,
                                                    Set<Tuple2<String, String>> processingBlacklist,
                                                    Message message,
@@ -212,10 +246,13 @@ public class PipelineInterpreter implements MessageProcessor {
         final String msgId = message.getId();
 
         // if a message-stream combination has already been processed (is in the set), skip that execution
+        // 忽略在黑名单中的
         final Set<String> streamsIds = initialStreamIds.stream()
                 .filter(streamId -> !processingBlacklist.contains(tuple(msgId, streamId)))
                 .filter(streamConnection::containsKey)
                 .collect(Collectors.toSet());
+
+        // 找到stream相关的所有pipeline
         final ImmutableSet<Pipeline> pipelinesToRun = streamsIds.stream()
                 .flatMap(streamId -> streamConnection.get(streamId).stream())
                 .collect(ImmutableSet.toImmutableSet());
@@ -253,6 +290,7 @@ public class PipelineInterpreter implements MessageProcessor {
     }
 
     // Public access is required due to use in the Illuminate processor.
+    // 将消息通过一组pipeline 可能会产生一组新的message
     public List<Message> processForResolvedPipelines(Message message,
                                                      String msgId,
                                                      Set<Pipeline> pipelines,
@@ -262,6 +300,7 @@ public class PipelineInterpreter implements MessageProcessor {
         // record execution of pipeline in metrics
         pipelines.forEach(Pipeline::markExecution);
 
+        // 遍历这组pipeline的 stage
         final StageIterator stages = state.getStageIterator(pipelines);
         final Set<Pipeline> pipelinesToSkip = Sets.newHashSet();
 
@@ -270,12 +309,14 @@ public class PipelineInterpreter implements MessageProcessor {
         while (stages.hasNext()) {
             // Don't execute the "stage slice" if the message has been dropped. Break out of the loop to skip all
             // remaining stages.
+            // 消息已经被标记成终止处理了
             if (message.getFilterOut()) {
                 break;
             }
 
             final List<Stage> stageSet = stages.next();
             for (final Stage stage : stageSet) {
+                // 挨个处理每个步骤 可能会产生新的message 就加入到result中
                 evaluateStage(stage, message, msgId, result, pipelinesToSkip, interpreterListener);
             }
         }
@@ -284,12 +325,23 @@ public class PipelineInterpreter implements MessageProcessor {
         return result;
     }
 
+    /**
+     * 挨个处理stage
+     * @param stage
+     * @param message
+     * @param msgId
+     * @param result                存储产生的message
+     * @param pipelinesToSkip       记录需要跳过的pipeline
+     * @param interpreterListener
+     */
     public void evaluateStage(Stage stage,
                                Message message,
                                String msgId,
                                List<Message> result,
                                Set<Pipeline> pipelinesToSkip,
                                InterpreterListener interpreterListener) {
+
+        // 该stage关联的pipeline 需要跳过 不用处理了
         final Pipeline pipeline = stage.getPipeline();
         if (pipelinesToSkip.contains(pipeline)) {
             log.debug("[{}] previous stage result prevents further processing of pipeline `{}`",
@@ -305,6 +357,7 @@ public class PipelineInterpreter implements MessageProcessor {
                 stage.match());
 
         // TODO the message should be decorated to allow layering changes and isolate stages
+        // 生成计算上下文
         final EvaluationContext context = new EvaluationContext(message);
 
         // 3. iterate over all the stages in these pipelines and execute them in order
@@ -312,6 +365,8 @@ public class PipelineInterpreter implements MessageProcessor {
         final List<Rule> rulesToRun = new ArrayList<>(stageRules.size());
         boolean anyRulesMatched = stageRules.isEmpty(); // If there are no rules, we can simply continue to the next stage
         boolean allRulesMatched = true;
+
+        // 找到满足评估条件的rule
         for (Rule rule : stageRules) {
             try {
                 final boolean ruleCondition = evaluateRuleCondition(rule, message, msgId, pipeline, context, rulesToRun, interpreterListener);
@@ -331,6 +386,7 @@ public class PipelineInterpreter implements MessageProcessor {
             }
         }
 
+        // 挨个执行每个rule
         for (Rule rule : rulesToRun) {
             if (!executeRuleActions(rule, message, msgId, pipeline, context, interpreterListener)) {
                 log.warn("Error evaluating action for rule <{}/{}> with message: {} (Error: {})",
@@ -339,6 +395,8 @@ public class PipelineInterpreter implements MessageProcessor {
                 break;
             }
         }
+        // 可能执行完了所有rule 也可能中途中断了
+
         // stage needed to match all rule conditions to enable the next stage,
         // record that it is ok to proceed with this pipeline
         // OR
@@ -353,6 +411,7 @@ public class PipelineInterpreter implements MessageProcessor {
                     msgId, stage.stage(), pipeline.name(), stage.match());
         } else {
             // no longer execute stages from this pipeline, the guard prevents it
+            // 该pipeline不可用的情况下 加入到skip列表中
             interpreterListener.stopPipelineExecution(pipeline, stage);
             log.debug("[{}] stage {} for pipeline `{}` required match: {}, NOT ok to proceed with next stage",
                     msgId, stage.stage(), pipeline.name(), stage.match());
@@ -363,6 +422,7 @@ public class PipelineInterpreter implements MessageProcessor {
         // TODO message changes become visible immediately for now
 
         // 4a. also add all new messages from the context to the toProcess work list
+        // 将衍生出的message添加到 result 中
         Iterables.addAll(result, context.createdMessages());
         context.clearCreatedMessages();
         interpreterListener.exitStage(stage);
@@ -391,6 +451,16 @@ public class PipelineInterpreter implements MessageProcessor {
         }
     }
 
+    /**
+     * 执行rule中的每个表达式
+     * @param message
+     * @param interpreterListener
+     * @param pipeline
+     * @param context
+     * @param rule
+     * @param statement
+     * @return
+     */
     private boolean evaluateStatement(Message message,
                                       InterpreterListener interpreterListener,
                                       Pipeline pipeline,
@@ -416,6 +486,17 @@ public class PipelineInterpreter implements MessageProcessor {
         return true;
     }
 
+    /**
+     * 使用规则对象去处理message
+     * @param rule
+     * @param message
+     * @param msgId
+     * @param pipeline
+     * @param context
+     * @param rulesToRun
+     * @param interpreterListener
+     * @return
+     */
     private boolean evaluateRuleCondition(Rule rule,
                                           Message message,
                                           String msgId,
@@ -426,6 +507,7 @@ public class PipelineInterpreter implements MessageProcessor {
         final boolean matched;
         final LogicalExpression logicalExpression = rule.when();
         try {
+
             matched = logicalExpression.evaluateBool(context);
         } catch (Exception e) {
 
@@ -444,6 +526,7 @@ public class PipelineInterpreter implements MessageProcessor {
             return false;
         }
 
+        // 这里是评估rule是否满足执行条件
         if (matched) {
             rule.markMatch();
             interpreterListener.satisfyRule(rule, pipeline);
@@ -478,6 +561,9 @@ public class PipelineInterpreter implements MessageProcessor {
                 .build();
     }
 
+    /**
+     * 描述一个状态
+     */
     public static class State {
         private final Logger LOG = LoggerFactory.getLogger(getClass());
         protected static final String STAGE_CACHE_METRIC_SUFFIX = "stage-cache";

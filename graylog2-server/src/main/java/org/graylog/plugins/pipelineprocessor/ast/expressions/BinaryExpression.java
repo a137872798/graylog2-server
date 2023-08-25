@@ -20,8 +20,14 @@ import com.google.common.collect.ImmutableList;
 
 import org.antlr.v4.runtime.Token;
 
+/**
+ * 二元表达式 内部包含 left/right 2个表达式
+ */
 public abstract class BinaryExpression extends UnaryExpression {
 
+    /**
+     * 左边表达式
+     */
     protected Expression left;
 
     public BinaryExpression(Token start, Expression left, Expression right) {

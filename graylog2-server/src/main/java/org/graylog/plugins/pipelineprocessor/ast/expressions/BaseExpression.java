@@ -20,6 +20,9 @@ import org.antlr.v4.runtime.Token;
 
 public abstract class BaseExpression implements Expression {
 
+    /**
+     * 该表达式所解析出来的第一个token
+     */
     private final Token startToken;
 
     public BaseExpression(Token startToken) {

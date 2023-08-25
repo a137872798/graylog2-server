@@ -34,6 +34,9 @@ import java.util.Set;
 
 import static org.graylog.plugins.pipelineprocessor.processors.PipelineInterpreter.getRateLimitedLog;
 
+/**
+ * 规则对象 在stage中起作用
+ */
 @AutoValue
 public abstract class Rule {
     private static final RateLimitedLog LOG = getRateLimitedLog(Rule.class);
@@ -54,8 +57,16 @@ public abstract class Rule {
 
     public abstract String name();
 
+    /**
+     * 逻辑表达式 可以返回一个boolean值   表示message是否满足评估条件
+     * @return
+     */
     public abstract LogicalExpression when();
 
+    /**
+     * 会话 可以直接函数  或者将一个参数设置到context中
+     * @return
+     */
     public abstract Collection<Statement> then();
 
     public static Builder builder() {

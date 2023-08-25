@@ -285,11 +285,16 @@ public class Message implements Messages, Indexable {
      * 存储一些自定义字段
      */
     private final Map<String, Object> fields = Maps.newHashMap();
+
+    /**
+     * 代表该message会经过哪些stream 以及经过这些stream相关的indexSet
+     */
     private Set<Stream> streams = Sets.newHashSet();
     private Set<IndexSet> indexSets = Sets.newHashSet();
     private String sourceInputId;
 
     // Used for drools to filter out messages.
+    // 代表这个消息被过滤掉了
     private boolean filterOut = false;
     /**
      * The offset the message originally had in the journal it was read from. This will be MIN_VALUE if no journal
@@ -408,6 +413,12 @@ public class Message implements Messages, Indexable {
         return getFieldAs(DateTime.class, FIELD_TIMESTAMP).withZone(UTC);
     }
 
+    /**
+     * message在落库前 需要转换
+     * @param objectMapper
+     * @param invalidTimestampMeter
+     * @return
+     */
     @Override
     public Map<String, Object> toElasticSearchObject(ObjectMapper objectMapper, @Nonnull final Meter invalidTimestampMeter) {
         final Map<String, Object> obj = Maps.newHashMapWithExpectedSize(REQUIRED_FIELDS.size() + fields.size());
@@ -739,6 +750,7 @@ public class Message implements Messages, Indexable {
      * Assign the given stream to this message.
      *
      * @param stream the stream to route this message into
+     *               将本条消息与一个stream关联起来
      */
     public void addStream(Stream stream) {
         indexSets.add(stream.getIndexSet());

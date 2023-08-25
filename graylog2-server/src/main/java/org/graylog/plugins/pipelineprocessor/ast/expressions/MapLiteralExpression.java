@@ -28,6 +28,9 @@ import org.jooq.lambda.tuple.Tuple2;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 跟ArrayLiteralExpression 类似 不过内部是一个map对象
+ */
 public class MapLiteralExpression extends BaseExpression {
     private final HashMap<String, Expression> map;
 

@@ -41,10 +41,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 该对象可以对查询结果做一层包装
+ */
 public class PipelineProcessorMessageDecorator implements SearchResponseDecorator {
     private static final String CONFIG_FIELD_PIPELINE = "pipeline";
 
+    /**
+     * 该对象是用于处理消息的
+     */
     private final PipelineInterpreter pipelineInterpreter;
+    /**
+     * 该对象负责更新state
+     */
     private final ConfigurationStateUpdater pipelineStateUpdater;
     private final ImmutableSet<String> pipelines;
 
@@ -103,6 +112,11 @@ public class PipelineProcessorMessageDecorator implements SearchResponseDecorato
         }
     }
 
+    /**
+     * 对结果进行包装
+     * @param searchResponse the function argument
+     * @return
+     */
     @WithSpan
     @Override
     public SearchResponse apply(SearchResponse searchResponse) {
@@ -110,6 +124,8 @@ public class PipelineProcessorMessageDecorator implements SearchResponseDecorato
         if (pipelines.isEmpty()) {
             return searchResponse;
         }
+
+        // 查询结果中包含的message需要经过pipeline的处理
         searchResponse.messages().forEach((inMessage) -> {
             final Message message = new Message(inMessage.message());
             final List<Message> additionalCreatedMessages = pipelineInterpreter.processForPipelines(message,

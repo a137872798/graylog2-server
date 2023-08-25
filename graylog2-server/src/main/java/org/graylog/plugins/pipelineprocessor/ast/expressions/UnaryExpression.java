@@ -22,8 +22,14 @@ import org.graylog.plugins.pipelineprocessor.parser.errors.SyntaxError;
 
 import java.util.Collections;
 
+/**
+ * 一元表达式
+ */
 public abstract class UnaryExpression extends BaseExpression {
 
+    /**
+     * UnaryExpression 本身描述的是一种关系  right可能是多元表达式也可能是单个值
+     */
     protected Expression right;
 
     public UnaryExpression(Token start, Expression right) {
@@ -42,6 +48,8 @@ public abstract class UnaryExpression extends BaseExpression {
             throw new ParseException(Collections.singleton(syntaxError));
         }
     }
+
+    // 本表达式的主体相当于是 right 所以都是委托给right的方法
 
     @Override
     public boolean isConstant() {

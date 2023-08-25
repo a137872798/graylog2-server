@@ -23,6 +23,9 @@ import javax.annotation.Nullable;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 
+/**
+ * 代表 * / %
+ */
 public class MultiplicationExpression extends BinaryExpression implements NumericExpression  {
     private final char operator;
     private Class type;

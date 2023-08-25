@@ -27,6 +27,10 @@ import java.lang.reflect.InvocationTargetException;
 
 import static org.graylog.plugins.pipelineprocessor.processors.PipelineInterpreter.getRateLimitedLog;
 
+/**
+ * 描述某个对象的某个字段
+ * 可能是通过反射获取某个字段值?
+ */
 public class FieldAccessExpression extends BaseExpression {
     private static final RateLimitedLog log = getRateLimitedLog(FieldAccessExpression.class);
 

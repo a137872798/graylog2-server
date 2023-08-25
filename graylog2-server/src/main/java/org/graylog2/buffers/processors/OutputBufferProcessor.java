@@ -59,14 +59,27 @@ public class OutputBufferProcessor implements WorkHandler<MessageEvent> {
 
     private final ExecutorService executor;
 
+    /**
+     * 该对象包含了各种各样的配置
+     */
     private final Configuration configuration;
+
+    /**
+     * 该对象可以作为服务器的开关
+     */
     private final ServerStatus serverStatus;
 
     private final Meter incomingMessages;
     private final Counter outputThroughput;
     private final Timer processTime;
 
+    /**
+     * 从该对象倒是没看到路由逻辑 不过可以获取msg相关的所有output对象
+     */
     private final OutputRouter outputRouter;
+    /**
+     * 默认输出目的地
+     */
     private final MessageOutput defaultMessageOutput;
 
     @Inject
@@ -116,6 +129,8 @@ public class OutputBufferProcessor implements WorkHandler<MessageEvent> {
      *
      * @param event the message to write to outputs
      * @throws Exception
+     *
+     * msg会先进入 processBuffer中 被process处理
      */
     @Override
     public void onEvent(MessageEvent event) throws Exception {
@@ -128,11 +143,14 @@ public class OutputBufferProcessor implements WorkHandler<MessageEvent> {
         }
         LOG.trace("Processing message <{}> from OutputBuffer.", msg.getId());
 
+        // 获取该msg相关的所有output
         final Set<MessageOutput> messageOutputs = outputRouter.getStreamOutputsForMessage(msg);
         msg.recordCounter(serverStatus, "matched-outputs", messageOutputs.size());
 
+        // 先使用默认output处理消息
         final Future<?> defaultOutputCompletion = processMessage(msg, defaultMessageOutput);
 
+        // 使用其他output处理
         final CountDownLatch streamOutputsDoneSignal = new CountDownLatch(messageOutputs.size());
         for (final MessageOutput output : messageOutputs) {
             processMessage(msg, output, streamOutputsDoneSignal);
@@ -161,18 +179,29 @@ public class OutputBufferProcessor implements WorkHandler<MessageEvent> {
         LOG.debug("Wrote message <{}> to all outputs. Finished handling.", msg.getId());
 
         event.clearMessages();
+
+        // 因为数据没有再往下游传播了 消息的处理就到此为止了
     }
 
     private Future<?> processMessage(final Message msg, final MessageOutput defaultMessageOutput) {
         return processMessage(msg, defaultMessageOutput, new CountDownLatch(0));
     }
 
+    /**
+     * 使用output处理消息
+     * @param msg
+     * @param output
+     * @param doneSignal
+     * @return
+     */
     private Future<?> processMessage(final Message msg, final MessageOutput output, final CountDownLatch doneSignal) {
         if (output == null) {
             LOG.error("Output was null!");
             doneSignal.countDown();
             return Futures.immediateCancelledFuture();
         }
+
+        // 该output已经被停止的情况下 不需要处理
         if (!output.isRunning()) {
             LOG.debug("Skipping stopped output {}", output.getClass().getName());
             doneSignal.countDown();

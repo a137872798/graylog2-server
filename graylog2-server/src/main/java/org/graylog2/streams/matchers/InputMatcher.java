@@ -21,11 +21,18 @@ import org.graylog2.plugin.streams.StreamRule;
 
 public class InputMatcher implements StreamRuleMatcher {
 
+    /**
+     * 要求 gl2_source_input 字段与rule的一致
+     *
+     * @param msg
+     * @param rule
+     * @return
+     */
     @Override
     public boolean match(Message msg, StreamRule rule) {
-       if(msg.getField(Message.FIELD_GL2_SOURCE_INPUT) == null) {
-           return rule.getInverted();
-       }
+        if (msg.getField(Message.FIELD_GL2_SOURCE_INPUT) == null) {
+            return rule.getInverted();
+        }
         final String value = msg.getField(Message.FIELD_GL2_SOURCE_INPUT).toString();
         return rule.getInverted() ^ value.trim().equalsIgnoreCase(rule.getValue());
     }

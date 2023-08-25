@@ -54,7 +54,10 @@ public class CloneMessage extends AbstractFunction<Message> {
 
     @Override
     public Message evaluate(FunctionArgs args, EvaluationContext context) {
+
+        // 从arg中获取message
         final Message currentMessage = messageParam.optional(args, context).orElse(context.currentMessage());
+        // 获取preventLoops
         final Optional<Boolean> preventLoops = loopDetectionParam.optional(args, context);
 
         int cloneNumber = (int) currentMessage.getMetadataValue(CLONE_NUMBER, 0);
@@ -77,12 +80,14 @@ public class CloneMessage extends AbstractFunction<Message> {
 
         }
 
+        // 产生了一个消息副本
         final Message clonedMessage = new Message(currentMessage.getMessage(), currentMessage.getSource(), currentMessage.getTimestamp());
         clonedMessage.addFields(currentMessage.getFields());
         clonedMessage.addStreams(currentMessage.getStreams());
         if (rule != null) {
             clonedMessage.setMetadata(CLONE_SOURCE, rule);
         }
+        // 以上的信息都被复制 然后设置了一个递增的clone_number
         clonedMessage.setMetadata(CLONE_NUMBER, ++cloneNumber);
 
         // register in context so the processor can inject it later on

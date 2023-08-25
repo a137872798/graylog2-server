@@ -29,7 +29,9 @@ public class MessageFilterBindings extends AbstractModule {
     @Override
     protected void configure() {
         Multibinder<MessageFilter> messageFilters = Multibinder.newSetBinder(binder(), MessageFilter.class);
+        // 为message追加静态字段
         messageFilters.addBinding().to(StaticFieldFilter.class);
+        // 对message进行字段抽取 和转换
         messageFilters.addBinding().to(ExtractorFilter.class);
     }
 }

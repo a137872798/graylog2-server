@@ -18,9 +18,18 @@ package org.graylog.plugins.pipelineprocessor.ast.expressions;
 
 import org.graylog.plugins.pipelineprocessor.EvaluationContext;
 
+/**
+ * 表示一个数字
+ */
 public interface NumericExpression extends Expression {
 
+    /**
+     * 不可缺少的?
+     * @return
+     */
     boolean isIntegral();
+
+    // 将数字转换成 long/double
 
     long evaluateLong(EvaluationContext context);
 

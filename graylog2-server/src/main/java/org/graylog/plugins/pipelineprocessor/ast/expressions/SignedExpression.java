@@ -23,7 +23,14 @@ import javax.annotation.Nullable;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 
+/**
+ * 代表一个有符号数
+ */
 public class SignedExpression extends UnaryExpression implements NumericExpression {
+
+    /**
+     * 正数 or 负数
+     */
     private final boolean isPlus;
 
     public SignedExpression(Token start, Expression right, boolean isPlus) {

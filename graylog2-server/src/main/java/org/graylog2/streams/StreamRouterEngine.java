@@ -53,20 +53,39 @@ import static com.codahale.metrics.MetricRegistry.name;
  * Stream routing engine to select matching streams for a message.
  *
  * This class is NOT thread-safe! Use one instance per thread.
+ * 流路由引擎
  */
 public class StreamRouterEngine {
     private static final Logger LOG = LoggerFactory.getLogger(StreamRouterEngine.class);
     private static final String METER_NAME_CANNOT_REMOVE_DEFAULT = "cannotRemoveDefault";
 
+    /**
+     * 表示这些规则不需要field
+     */
     private final EnumSet<StreamRuleType> ruleTypesNotNeedingFieldPresence = EnumSet.of(StreamRuleType.PRESENCE, StreamRuleType.EXACT, StreamRuleType.REGEX, StreamRuleType.ALWAYS_MATCH, StreamRuleType.CONTAINS, StreamRuleType.MATCH_INPUT);
+
+    /**
+     * 目前所有可用的stream
+     */
     private final List<Stream> streams;
+
+    /**
+     * 记录流的失败次数 并在达到上限后暂停流
+     */
     private final StreamFaultManager streamFaultManager;
     private final StreamMetrics streamMetrics;
     private final TimeLimiter timeLimiter;
     private final long streamProcessingTimeout;
     private final String fingerprint;
+
+    /**
+     * 用于返回默认流
+     */
     private final Provider<Stream> defaultStreamProvider;
 
+    /**
+     * 每个rule关联一个stream 提供api来判断message是否满足规则
+     */
     private final List<Rule> rulesList;
     private final Counter cannotRemoveDefaultMeter;
 
@@ -99,6 +118,7 @@ public class StreamRouterEngine {
         final List<Rule> containsRules = Lists.newArrayList();
         final List<Rule> matchInputRules = Lists.newArrayList();
 
+        // 一个stream可以关联多个streamRule
         for (Stream stream : streams) {
             for (StreamRule streamRule : stream.getStreamRules()) {
                 final Rule rule;
@@ -172,12 +192,16 @@ public class StreamRouterEngine {
      *
      * @param message the message
      * @return the list of matching streams
+     * 获取msg能匹配的stream
      */
     public List<Stream> match(Message message) {
         final Set<Stream> result = Sets.newHashSet();
         final Set<String> blackList = Sets.newHashSet();
 
+        // 遍历每个规则
         for (final Rule rule : rulesList) {
+
+            // 跳过已经加入黑名单的stream
             if (blackList.contains(rule.getStreamId())) {
                 continue;
             }
@@ -185,6 +209,8 @@ public class StreamRouterEngine {
             final StreamRule streamRule = rule.getStreamRule();
             final StreamRuleType streamRuleType = streamRule.getType();
             final Stream.MatchingType matchingType = rule.getMatchingType();
+
+            // 因为是AND 只要一个不满足 提前加入黑名单
             if (!ruleTypesNotNeedingFieldPresence.contains(streamRuleType)
                 && !message.hasField(streamRule.getField())) {
                 if (matchingType == Stream.MatchingType.AND) {
@@ -218,11 +244,13 @@ public class StreamRouterEngine {
             }
         }
 
+        // 上面已经完成匹配行为了
         final Stream defaultStream = defaultStreamProvider.get();
         boolean alreadyRemovedDefaultStream = false;
         for (Stream stream : result) {
             streamMetrics.markIncomingMeter(stream.getId());
             if (stream.getRemoveMatchesFromDefaultStream()) {
+                // 把 defaultStream从msg上移除
                 if (alreadyRemovedDefaultStream || message.removeStream(defaultStream)) {
                     alreadyRemovedDefaultStream = true;
                     if (LOG.isTraceEnabled()) {
@@ -254,6 +282,7 @@ public class StreamRouterEngine {
      * This is meant for testing, do NOT use in production processing pipeline! (use {@link #match(org.graylog2.plugin.Message) match} instead)
      *
      * @param message the message to match streams on
+     *                TODO
      */
     public List<StreamTestMatch> testMatch(Message message) {
         final List<StreamTestMatch> matches = Lists.newArrayList();
@@ -278,12 +307,23 @@ public class StreamRouterEngine {
         return matches;
     }
 
+    /**
+     * 规则对象可以判断某个message是否与stream匹配
+     */
     private class Rule {
+
         private final Stream stream;
         private final StreamRule rule;
         private final String streamId;
         private final String streamRuleId;
+
+        /**
+         * 根据不同的匹配方式 有不同的matcher对象
+         */
         private final StreamRuleMatcher matcher;
+        /**
+         * 描述流的匹配方式 and/or
+         */
         private final Stream.MatchingType matchingType;
 
         public Rule(Stream stream, StreamRule rule, Stream.MatchingType matchingType) throws InvalidStreamRuleTypeException {
@@ -317,6 +357,13 @@ public class StreamRouterEngine {
             }
         }
 
+        /**
+         * 一般是正则匹配才会调用该方法
+         * @param message
+         * @param timeout
+         * @param unit
+         * @return
+         */
         @Nullable
         private Stream matchWithTimeOut(final Message message, long timeout, TimeUnit unit) {
             Stream matchedStream = null;

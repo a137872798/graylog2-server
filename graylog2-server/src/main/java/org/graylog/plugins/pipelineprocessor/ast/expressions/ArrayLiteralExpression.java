@@ -25,6 +25,9 @@ import org.graylog.plugins.pipelineprocessor.EvaluationContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 一组表达式
+ */
 public class ArrayLiteralExpression extends BaseExpression {
     private final List<Expression> elements;
 
@@ -38,6 +41,11 @@ public class ArrayLiteralExpression extends BaseExpression {
         return elements.stream().allMatch(Expression::isConstant);
     }
 
+    /**
+     * 挨个计算结果并存储到list中
+     * @param context
+     * @return
+     */
     @Override
     public List evaluateUnsafe(EvaluationContext context) {
         return  elements.stream()

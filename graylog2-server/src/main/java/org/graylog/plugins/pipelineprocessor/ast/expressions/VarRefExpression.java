@@ -24,6 +24,9 @@ import java.util.Collections;
 
 import static org.graylog.plugins.pipelineprocessor.processors.PipelineInterpreter.getRateLimitedLog;
 
+/**
+ * 引用上下文的某个变量
+ */
 public class VarRefExpression extends BaseExpression {
     private static final RateLimitedLog log = getRateLimitedLog(VarRefExpression.class);
 

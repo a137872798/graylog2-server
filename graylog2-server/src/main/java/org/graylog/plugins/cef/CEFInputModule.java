@@ -28,6 +28,9 @@ import org.graylog.plugins.cef.pipelines.rules.CEFParserFunction;
 import org.graylog.plugins.pipelineprocessor.ast.functions.Function;
 import org.graylog2.plugin.PluginModule;
 
+/**
+ * TODO CEF 是指一种特殊的日志格式
+ */
 public class CEFInputModule extends PluginModule {
     @Override
     protected void configure() {

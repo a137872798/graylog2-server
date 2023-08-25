@@ -26,10 +26,22 @@ import javax.annotation.Nullable;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 
+/**
+ * 代表将左右2个表达式相加/相减  比如 3+5
+ */
 public class AdditionExpression extends BinaryExpression implements NumericExpression {
+
+    // 相加 or 相减
     private final boolean isPlus;
     private Class type = Void.class;
 
+    /**
+     *
+     * @param start   start代表二元表达式的第一个token
+     * @param left
+     * @param right
+     * @param isPlus
+     */
     public AdditionExpression(Token start, Expression left, Expression right, boolean isPlus) {
         super(start, left, right);
         this.isPlus = isPlus;
@@ -50,13 +62,20 @@ public class AdditionExpression extends BinaryExpression implements NumericExpre
         return (double) firstNonNull(evaluateUnsafe(context), 0d);
     }
 
+    /**
+     * 计算表达式的值
+     * @param context
+     * @return
+     */
     @Nullable
     @Override
     public Object evaluateUnsafe(EvaluationContext context) {
+        // 分别计算左右表达式的值  如果是常量表达式应该就是直接获取到常量值
         final Object leftValue = left.evaluateUnsafe(context);
         final Object rightValue = right.evaluateUnsafe(context);
 
         // special case for date arithmetic
+        // 判断表达式是否是时间类型
         final boolean leftDate = DateTime.class.equals(leftValue.getClass());
         final boolean leftPeriod = Period.class.equals(leftValue.getClass());
         final boolean rightDate = DateTime.class.equals(rightValue.getClass());
@@ -91,6 +110,8 @@ public class AdditionExpression extends BinaryExpression implements NumericExpre
             } else {
                 return new Duration(right, left);
             }
+
+            // 排开时间类型 如果是string类型
         } else if(String.class.equals(type)) {
             if (!isPlus) {
                 return null;
@@ -100,6 +121,8 @@ public class AdditionExpression extends BinaryExpression implements NumericExpre
             final String right = String.valueOf(rightValue);
             return left + right;
         }
+
+        // 该方法变成了描述类型是 long 还是 double
         if (isIntegral()) {
             final long l = (long) leftValue;
             final long r = (long) rightValue;

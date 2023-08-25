@@ -29,11 +29,23 @@ import org.graylog.plugins.pipelineprocessor.ast.functions.FunctionDescriptor;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 需要一个函数以及函数的参数 计算就是触发函数
+ */
 public class FunctionExpression extends BaseExpression {
+
+    /**
+     * 包含一组表达式 以及一个 Function
+     */
     private final FunctionArgs args;
     private final Function<?> function;
     private final FunctionDescriptor descriptor;
 
+    /**
+     *
+     * @param start  代表一个被解析的表达式的第一个token
+     * @param args
+     */
     public FunctionExpression(Token start, FunctionArgs args) {
         super(start);
         this.args = args;
@@ -41,6 +53,7 @@ public class FunctionExpression extends BaseExpression {
         this.descriptor = this.function.descriptor();
 
         // precomputes all constant arguments to avoid dynamically recomputing trees on every invocation
+        // 在初始化时 顺便就进行预处理了
         this.function.preprocessArgs(args);
     }
 
@@ -52,6 +65,10 @@ public class FunctionExpression extends BaseExpression {
         return args;
     }
 
+    /**
+     * 函数表达式必然不是常量
+     * @return
+     */
     @Override
     public boolean isConstant() {
         return false;
@@ -60,6 +77,7 @@ public class FunctionExpression extends BaseExpression {
     @Override
     public Object evaluateUnsafe(EvaluationContext context) {
         try {
+            // 触发函数 并且转换结果
             return descriptor.returnType().cast(function.evaluate(args, context));
         } catch (LocationAwareEvalException laee) {
             // the exception already has a location from the input source, simply propagate it.

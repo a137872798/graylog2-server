@@ -29,15 +29,25 @@ import javax.inject.Inject;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 记录失败信息
+ */
 public class StreamFaultManager {
     private static final Logger LOG = LoggerFactory.getLogger(StreamFaultManager.class);
 
     private final StreamMetrics streamMetrics;
+
+    /**
+     * TODO 用于发送通知
+     */
     private final NotificationService notificationService;
     private final StreamService streamService;
     private final int maxFaultCount;
     private final long streamProcessingTimeout;
 
+    /**
+     * 统计每个流的失败次数
+     */
     private final ConcurrentMap<String, AtomicInteger> faultCounter = Maps.newConcurrentMap();
 
     @Inject
@@ -56,12 +66,17 @@ public class StreamFaultManager {
         return streamProcessingTimeout;
     }
 
+    /**
+     * 记录失败信息
+     * @param stream
+     */
     public void registerFailure(final Stream stream) {
         final AtomicInteger faultCount = getFaultCount(stream);
         final int streamFaultCount = faultCount.incrementAndGet();
 
         streamMetrics.markStreamRuleTimeout(stream.getId());
 
+        // 失败次数过多 先暂停该流
         if (maxFaultCount > 0 && streamFaultCount >= maxFaultCount) {
             try {
                 streamService.pause(stream);
@@ -70,6 +85,7 @@ public class StreamFaultManager {
                 LOG.error("Processing of stream <{}> failed to return within {}ms for more than {} times. Disabling stream.",
                         stream.getId(), streamProcessingTimeout, maxFaultCount);
 
+                // TODO 触发通知
                 triggerNotification(stream, streamFaultCount);
             } catch (ValidationException ex) {
                 LOG.error("Unable to pause stream: {}", ex);

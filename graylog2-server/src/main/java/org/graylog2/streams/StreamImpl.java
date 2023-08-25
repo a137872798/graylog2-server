@@ -65,6 +65,9 @@ public class StreamImpl extends PersistedImpl implements Stream {
     public static final String FIELD_INDEX_SET_ID = "index_set_id";
     public static final String EMBEDDED_ALERT_CONDITIONS = "alert_conditions";
 
+    /**
+     * StreamRule 用于确定msg是否可以绑定到这个stream上
+     */
     private final List<StreamRule> streamRules;
     private final Set<Output> outputs;
     private final IndexSet indexSet;

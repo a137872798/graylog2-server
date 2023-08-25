@@ -34,10 +34,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author Dennis Oelkers <dennis@torch.sh>
+ *     包含MessageOutput相关的注入逻辑
  */
 public class MessageOutputBindings extends Graylog2Module {
     private static final Logger LOG = LoggerFactory.getLogger(MessageOutputBindings.class);
 
+    /**
+     * 全局配置对象
+     */
     private final Configuration configuration;
     private final ChainingClassLoader chainingClassLoader;
 
@@ -48,18 +52,28 @@ public class MessageOutputBindings extends Graylog2Module {
 
     @Override
     protected void configure() {
+        // 默认会使用 BlockingBatchedESOutput
         final Class<? extends MessageOutput> defaultMessageOutputClass = getDefaultMessageOutputClass(BlockingBatchedESOutput.class);
         LOG.debug("Using default message output class: {}", defaultMessageOutputClass.getCanonicalName());
+
+        // 将defaultMessageOutputClass 与 @DefaultMessageOutput 注解绑定在一起  这样当需要注入携带@DefaultMessageOutput 注解的对象时 就会自动选择正确的注入类
         OptionalBinder.newOptionalBinder(binder(), Key.get(MessageOutput.class, DefaultMessageOutput.class))
                 .setDefault().to(defaultMessageOutputClass).in(Scopes.SINGLETON);
 
         final MapBinder<String, MessageOutput.Factory<? extends MessageOutput>> outputMapBinder = outputsMapBinder();
+        // 这里注入2个output对象
         installOutput(outputMapBinder, GelfOutput.class, GelfOutput.Factory.class);
         installOutput(outputMapBinder, LoggingOutput.class, LoggingOutput.Factory.class);
     }
 
+    /**
+     * 获取消息输出对象
+     * @param fallbackClass
+     * @return
+     */
     private Class<? extends MessageOutput> getDefaultMessageOutputClass(Class<? extends MessageOutput> fallbackClass) {
         // Just use the default fallback if nothing is configured. This is the default case.
+        // 尝试从配置中获取默认的消息输出类
         if (Strings.isNullOrEmpty(configuration.getDefaultMessageOutputClass())) {
             return fallbackClass;
         }

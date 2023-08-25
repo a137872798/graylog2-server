@@ -48,6 +48,9 @@ import org.graylog2.plugin.PluginModule;
 import java.util.Collections;
 import java.util.Set;
 
+/**
+ * 威胁情报插件
+ */
 public class ThreatIntelPluginModule extends PluginModule {
 
     @Override

@@ -27,12 +27,16 @@ import org.graylog2.plugin.PluginModule;
 public class MessageProcessorModule extends PluginModule {
     @Override
     protected void configure() {
+
+        // 该processor 用于为message匹配stream 并将stream设置到message上 至于能绑定哪些stream 取决于streamRule的匹配规则
         addMessageProcessor(StreamMatcherFilterProcessor.class, StreamMatcherFilterProcessor.Descriptor.class);
         addMessageProcessor(MessageFilterChainProcessor.class, MessageFilterChainProcessor.Descriptor.class);
         // must not be a singleton, because each thread should get an isolated copy of the processors
         bind(OrderedMessageProcessors.class).in(Scopes.NO_SCOPE);
 
+        // messageProcessor的安装 会额外触发2个模块的安装
         install(new PipelineProcessorModule());
+        // 安装基于mongodb的存储模块
         install(new MongoDbServicesModule());
     }
 }

@@ -30,6 +30,9 @@ import org.graylog2.shared.messageq.noop.NoopMessageQueueAcknowledger;
 import org.graylog2.shared.messageq.noop.NoopMessageQueueReader;
 import org.graylog2.shared.messageq.noop.NoopMessageQueueWriter;
 
+/**
+ * 消息队列模块   主要就是记录日志用的
+ */
 public class MessageQueueModule extends PluginModule {
     public static final String DISK_JOURNAL_MODE = "disk";
     public static final String NOOP_JOURNAL_MODE = "noop";

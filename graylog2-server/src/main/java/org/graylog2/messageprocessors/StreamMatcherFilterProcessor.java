@@ -32,6 +32,10 @@ import java.util.List;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 当收到message后 是要经过消息处理器的
+ * 该对象会分析message 并将其关联到所有匹配的stream
+ */
 public class StreamMatcherFilterProcessor implements MessageProcessor  {
     private static final Logger LOG = LoggerFactory.getLogger(StreamMatcherFilterProcessor.class);
 
@@ -48,8 +52,14 @@ public class StreamMatcherFilterProcessor implements MessageProcessor  {
     }
 
     private final MetricRegistry metricRegistry;
+    /**
+     * 相当于服务的一个开关
+     */
     private final ServerStatus serverStatus;
 
+    /**
+     * 用于分析message会关联到的stream
+     */
     private final StreamRouter streamRouter;
 
     @Inject
@@ -62,6 +72,7 @@ public class StreamMatcherFilterProcessor implements MessageProcessor  {
     }
 
     private void route(Message msg) {
+        // 为message找到关联的stream 并添加到message中
         List<Stream> streams = streamRouter.route(msg);
         msg.addStreams(streams);
 

@@ -30,6 +30,9 @@ import javax.inject.Inject;
 
 import static org.graylog.plugins.pipelineprocessor.processors.PipelineInterpreter.getRateLimitedLog;
 
+/**
+ * TODO
+ */
 public class LegacyDefaultStreamMigration extends Periodical {
     private static final RateLimitedLog LOG = getRateLimitedLog(LegacyDefaultStreamMigration.class);
 

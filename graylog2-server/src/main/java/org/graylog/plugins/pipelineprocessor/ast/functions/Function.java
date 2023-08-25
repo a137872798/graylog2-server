@@ -26,6 +26,10 @@ import java.util.Map;
 
 import static org.graylog.plugins.pipelineprocessor.processors.PipelineInterpreter.getRateLimitedLog;
 
+/**
+ * 代表一个函数   会作用在expression上并产生结果
+ * @param <T>
+ */
 public interface Function<T> {
 
     RateLimitedLog log = getRateLimitedLog(Function.class);
@@ -51,17 +55,25 @@ public interface Function<T> {
         }
     };
 
+    /**
+     * 对函数进行预处理
+     * @param args
+     */
     default void preprocessArgs(FunctionArgs args) {
+        // 遍历所有常量参数
         for (Map.Entry<String, Expression> e : args.getConstantArgs().entrySet()) {
             final String name = e.getKey();
             try {
+                // 对常量参数进行预处理  常量表达式能够直接变成某个字面量 所以先得出结果可以简化后续的操作
                 final Object value = preComputeConstantArgument(args, name, e.getValue());
                 if (value != null) {
                     //noinspection unchecked
+                    // 获取这个参数的描述信息  可能需要对得到的常量字面量进行转换
                     final ParameterDescriptor<Object, Object> param = (ParameterDescriptor<Object, Object>) args.param(name);
                     if (param == null) {
                         throw new IllegalStateException("Unknown parameter " + name + "! Cannot continue.");
                     }
+                    // 设置预处理的值
                     args.setPreComputedValue(name, param.transform().apply(value));
                 }
             } catch (Exception exception) {

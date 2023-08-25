@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Routes a {@link org.graylog2.plugin.Message} to its streams.
+ * 流路由器
  */
 public class StreamRouter {
     private static final Logger LOG = LoggerFactory.getLogger(StreamRouter.class);
@@ -47,6 +48,10 @@ public class StreamRouter {
     private final ScheduledExecutorService scheduler;
 
     private final AtomicReference<StreamRouterEngine> routerEngine = new AtomicReference<>(null);
+
+    /**
+     * 该对象负责定期更新StreamRouterEngine
+     */
     private final StreamRouterEngineUpdater engineUpdater;
 
     @Inject
@@ -69,6 +74,7 @@ public class StreamRouter {
         return new RouterEngineInfo(routerEngine.get().getFingerprint());
     }
 
+    // 检测到变更事件后 立刻同步stream
     @Subscribe
     @SuppressWarnings("unused")
     public void handleStreamsUpdate(StreamsChangedEvent event) {
@@ -100,9 +106,13 @@ public class StreamRouter {
 
         msg.recordCounter(serverStatus, "streams-evaluated", engine.getStreams().size());
 
+        // 通过引擎查找message匹配的所有stream
         return engine.match(msg);
     }
 
+    /**
+     * 该对象会定期拉取所有stream 用于更新engine
+     */
     private static class StreamRouterEngineUpdater implements Runnable {
         private final AtomicReference<StreamRouterEngine> routerEngine;
         private final StreamRouterEngine.Factory engineFactory;
@@ -122,6 +132,7 @@ public class StreamRouter {
         @Override
         public void run() {
             try {
+                // 每次使用当前可以检索到的所有最新stream来初始化 StreamRouterEngine
                 final StreamRouterEngine engine = getNewEngine();
 
                 if (engine.getFingerprint().equals(routerEngine.get().getFingerprint())) {

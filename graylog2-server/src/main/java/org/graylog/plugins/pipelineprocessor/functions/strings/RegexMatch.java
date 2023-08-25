@@ -49,6 +49,8 @@ public class RegexMatch extends AbstractFunction<RegexMatch.RegexMatchResult> {
 
     @Override
     public RegexMatchResult evaluate(FunctionArgs args, EvaluationContext context) {
+
+        // 获取正则对象
         final Pattern regex = pattern.required(args, context);
         final String value = this.value.required(args, context);
         if (regex == null || value == null) {
@@ -57,6 +59,7 @@ public class RegexMatch extends AbstractFunction<RegexMatch.RegexMatchResult> {
                     context.pipelineErrorMessage("Argument '" + nullArgument + "' cannot be 'null'"));
         }
         //noinspection unchecked
+        // 获取一个list
         final List<String> groupNames =
                 (List<String>) optionalGroupNames.optional(args, context).orElse(Collections.emptyList());
 

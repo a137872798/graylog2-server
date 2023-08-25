@@ -134,15 +134,24 @@ import org.graylog.plugins.pipelineprocessor.functions.urls.UrlDecode;
 import org.graylog.plugins.pipelineprocessor.functions.urls.UrlEncode;
 import org.graylog2.plugin.PluginModule;
 
+/**
+ * 这里是一些通用的函数 会作用在被antlr4处理后的expression上
+ */
 public class ProcessorFunctionsModule extends PluginModule {
+
     @Override
     protected void configure() {
+
+        // 抽取名为value的arg 并转换成对应的类型
+
         // built-in functions
         addMessageProcessorFunction(BooleanConversion.NAME, BooleanConversion.class);
         addMessageProcessorFunction(DoubleConversion.NAME, DoubleConversion.class);
         addMessageProcessorFunction(LongConversion.NAME, LongConversion.class);
         addMessageProcessorFunction(StringConversion.NAME, StringConversion.class);
         addMessageProcessorFunction(MapConversion.NAME, MapConversion.class);
+
+        // 判断参数是否是某个类型
 
         // Comparison functions
         addMessageProcessorFunction(IsBoolean.NAME, IsBoolean.class);
@@ -159,6 +168,8 @@ public class ProcessorFunctionsModule extends PluginModule {
         addMessageProcessorFunction(IsJson.NAME, IsJson.class);
         addMessageProcessorFunction(IsUrl.NAME, IsUrl.class);
 
+        // 从arg中解析出message 并判断field与message的关系
+
         // message related functions
         addMessageProcessorFunction(HasField.NAME, HasField.class);
         addMessageProcessorFunction(GetField.NAME, GetField.class);
@@ -168,25 +179,35 @@ public class ProcessorFunctionsModule extends PluginModule {
         addMessageProcessorFunction(RemoveField.NAME, RemoveField.class);
         addMessageProcessorFunction(NormalizeFields.NAME, NormalizeFields.class);
 
+
         addMessageProcessorFunction(DropMessage.NAME, DropMessage.class);
+        // 创建消息
         addMessageProcessorFunction(CreateMessage.NAME, CreateMessage.class);
         addMessageProcessorFunction(CloneMessage.NAME, CloneMessage.class);
+        // 从message上移除某个stream
         addMessageProcessorFunction(RemoveFromStream.NAME, RemoveFromStream.class);
+        // 将stream加入到message中
         addMessageProcessorFunction(RouteToStream.NAME, RouteToStream.class);
+
+        // 获取message的长度
         addMessageProcessorFunction(TrafficAccountingSize.NAME, TrafficAccountingSize.class);
         // helper service for route_to_stream
         serviceBinder().addBinding().to(StreamCacheService.class).in(Scopes.SINGLETON);
 
         // input related functions
+        // 判断当前message是否从该input来
         addMessageProcessorFunction(FromInput.NAME, FromInput.class);
 
         // generic functions
+        // 将正则作用到arg上 并返回匹配的结果
         addMessageProcessorFunction(RegexMatch.NAME, RegexMatch.class);
+        // 将正则命中的字符替换成别的
         addMessageProcessorFunction(RegexReplace.NAME, RegexReplace.class);
+        // 使用grok进行正则判定
         addMessageProcessorFunction(GrokMatch.NAME, GrokMatch.class);
         addMessageProcessorFunction(GrokExists.NAME, GrokExists.class);
 
-        // string functions
+        // string functions  一些字符串函数
         addMessageProcessorFunction(Abbreviate.NAME, Abbreviate.class);
         addMessageProcessorFunction(Capitalize.NAME, Capitalize.class);
         addMessageProcessorFunction(Contains.NAME, Contains.class);
@@ -238,7 +259,7 @@ public class ProcessorFunctionsModule extends PluginModule {
         addMessageProcessorFunction(SHA256.NAME, SHA256.class);
         addMessageProcessorFunction(SHA512.NAME, SHA512.class);
 
-        // encoding
+        // encoding  对抽取出来的字段进行编码
         addMessageProcessorFunction(Base16Encode.NAME, Base16Encode.class);
         addMessageProcessorFunction(Base16Decode.NAME, Base16Decode.class);
         addMessageProcessorFunction(Base32Encode.NAME, Base32Encode.class);
@@ -252,6 +273,7 @@ public class ProcessorFunctionsModule extends PluginModule {
 
         // ip handling
         addMessageProcessorFunction(CidrMatch.NAME, CidrMatch.class);
+        // 抽取出value 并转换成ip
         addMessageProcessorFunction(IpAddressConversion.NAME, IpAddressConversion.class);
 
         // null support
@@ -263,7 +285,7 @@ public class ProcessorFunctionsModule extends PluginModule {
         addMessageProcessorFunction(UrlDecode.NAME, UrlDecode.class);
         addMessageProcessorFunction(UrlEncode.NAME, UrlEncode.class);
 
-        // Syslog support
+        // Syslog support   提供一些syslog相关的转换
         addMessageProcessorFunction(SyslogFacilityConversion.NAME, SyslogFacilityConversion.class);
         addMessageProcessorFunction(SyslogLevelConversion.NAME, SyslogLevelConversion.class);
         addMessageProcessorFunction(SyslogPriorityConversion.NAME, SyslogPriorityConversion.class);

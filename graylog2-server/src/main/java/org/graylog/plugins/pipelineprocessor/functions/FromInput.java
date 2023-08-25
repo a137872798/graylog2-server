@@ -54,6 +54,7 @@ public class FromInput extends AbstractFunction<Boolean> {
 
         MessageInput input = null;
         if ("".equals(id)) {
+            // 找到title匹配的 messageInput对象
             final String name = nameParam.optional(args, context).orElse("");
             for (IOState<MessageInput> messageInputIOState : inputRegistry.getInputStates()) {
                 final MessageInput messageInput = messageInputIOState.getStoppable();
@@ -72,6 +73,8 @@ public class FromInput extends AbstractFunction<Boolean> {
             }
 
         }
+
+        // 判断当前message是否从该messageInput来
         return input != null
                 && input.getId().equals(context.currentMessage().getSourceInputId());
     }

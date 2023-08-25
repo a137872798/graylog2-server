@@ -63,6 +63,7 @@ import static org.graylog2.shared.utilities.StringUtils.f;
  */
 @Singleton
 public class Indices {
+
     private static final Logger LOG = LoggerFactory.getLogger(Indices.class);
     public static final String REOPENED_ALIAS_SUFFIX = "_reopened";
 

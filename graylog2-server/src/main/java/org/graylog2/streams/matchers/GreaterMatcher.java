@@ -26,6 +26,12 @@ import static org.graylog2.plugin.Tools.getDouble;
  */
 public class GreaterMatcher implements StreamRuleMatcher {
 
+    /**
+     * 要求消息中对应字段的值  要超过rule设定的值
+     * @param msg
+     * @param rule
+     * @return
+     */
 	@Override
 	public boolean match(Message msg, StreamRule rule) {
         Double msgVal = getDouble(msg.getField(rule.getField()));

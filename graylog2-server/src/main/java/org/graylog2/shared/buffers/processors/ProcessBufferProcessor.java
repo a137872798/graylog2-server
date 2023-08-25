@@ -79,11 +79,19 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
      * 为原始消息解码
      */
     private final DecodingProcessor decodingProcessor;
+
+    /**
+     * 通过该对象可以获取默认流
+     */
     private final Provider<Stream> defaultStreamProvider;
     /**
      * 处理失败时 提交的服务
      */
     private final FailureSubmissionService failureSubmissionService;
+
+    /**
+     * 该处理器此时正在处理的消息
+     */
     private volatile Message currentMessage;
 
     /**
@@ -205,9 +213,11 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
      * @param msg
      */
     private void handleMessage(@Nonnull Message msg) {
+        // 将message与默认流关联起来
         msg.addStream(defaultStreamProvider.get());
         Messages messages = msg;
 
+        // 使用消息处理器 挨个处理消息
         for (MessageProcessor messageProcessor : orderedMessageProcessors) {
             messages = messageProcessor.process(messages);
         }
@@ -226,7 +236,9 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
             message.setProcessingTime(Tools.nowUTC());
             processingStatusRecorder.updatePostProcessingReceiveTime(message.getReceiveTime());
 
+            // message中没有error信息也会返回true
             if(failureSubmissionService.submitProcessingErrors(message)) {
+                // 处理完消息后 将消息发往下游 OutputBuffer (下游的RingBuffer)
                 outputBuffer.insertBlocking(message);
             }
         }

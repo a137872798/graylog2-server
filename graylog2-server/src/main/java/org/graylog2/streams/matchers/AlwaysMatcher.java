@@ -24,6 +24,7 @@ import java.util.Optional;
 public class AlwaysMatcher implements StreamRuleMatcher {
     @Override
     public boolean match(Message msg, StreamRule rule) {
+        // 表示结果是否要取反   使用该matcher的对象
         return Optional.ofNullable(rule.getInverted())
                 // When this rule is inverted, it should never match
                 .map(inverted -> !inverted)

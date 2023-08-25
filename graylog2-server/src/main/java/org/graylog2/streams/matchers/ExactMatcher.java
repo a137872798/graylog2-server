@@ -24,6 +24,12 @@ import org.graylog2.plugin.streams.StreamRule;
  */
 public class ExactMatcher implements StreamRuleMatcher {
 
+    /**
+     * 精准匹配 要求msg的某个字段必须与rule的一致
+     * @param msg
+     * @param rule
+     * @return
+     */
 	@Override
 	public boolean match(Message msg, StreamRule rule) {
         if (msg.getField(rule.getField()) == null) {

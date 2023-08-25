@@ -56,6 +56,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+/**
+ * 该对象维护所有注册的output
+ */
 @Singleton
 public class OutputRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(OutputRegistry.class);
@@ -64,12 +67,33 @@ public class OutputRegistry {
             .every(Duration.ofSeconds(5))
             .build();
 
+    /**
+     * 缓存加载到的所有 输出点
+     */
     private final Cache<String, MessageOutput> runningMessageOutputs;
+
+    /**
+     * 默认的消息输出点  默认是 BlockingBatchedESOutput
+     */
     private final MessageOutput defaultMessageOutput;
+    /**
+     * 提供output的CRUD服务
+     */
     private final OutputService outputService;
+    /**
+     * TODO
+     */
     private final NotificationService notificationService;
     private final NodeId nodeId;
+
+    /**
+     * 该对象维护了各种 output的工厂
+     */
     private final MessageOutputFactory messageOutputFactory;
+
+    /**
+     * 记录错误的出现次数
+     */
     private final LoadingCache<String, AtomicInteger> faultCounters;
     private final StreamService streamService;
     private final long faultCountThreshold;
@@ -94,6 +118,8 @@ public class OutputRegistry {
         this.runningMessageOutputs = CacheBuilder.newBuilder().build();
         this.faultCountThreshold = faultCountThreshold;
         this.faultPenaltySeconds = faultPenaltySeconds;
+
+        // 代表每间隔一段时间重置失败次数
         this.faultCounters = CacheBuilder.newBuilder()
                 .expireAfterWrite(this.faultPenaltySeconds, TimeUnit.SECONDS)
                 .build(new CacheLoader<>() {
@@ -127,13 +153,21 @@ public class OutputRegistry {
             return;
         }
 
+        // 重新加载所有可用的stream所关联的output
         final Set<String> expectedRunningOutputs = streamService.loadAllEnabled().stream()
                 .flatMap(stream -> stream.getOutputs().stream()).map(Output::getId).collect(Collectors.toSet());
         final Set<String> currentlyRunningOutputs = runningMessageOutputs.asMap().keySet();
 
+        // 这样不再使用的output会自动移除
         Sets.difference(currentlyRunningOutputs, expectedRunningOutputs).forEach(this::removeOutput);
     }
 
+    /**
+     * 根据id 从stream中确定某个output
+     * @param id
+     * @param stream
+     * @return
+     */
     @Nullable
     public MessageOutput getOutputForIdAndStream(String id, Stream stream) {
         final AtomicInteger faultCount;
@@ -145,6 +179,7 @@ public class OutputRegistry {
         }
 
         try {
+            // 只有在失败次数少于要求值的时候 才能
             if (faultCount.get() < faultCountThreshold) {
                 return this.runningMessageOutputs.get(id, loadForIdAndStream(id, stream));
             }
@@ -183,6 +218,12 @@ public class OutputRegistry {
         return null;
     }
 
+    /**
+     * 获取output
+     * @param id
+     * @param stream
+     * @return
+     */
     public Callable<MessageOutput> loadForIdAndStream(final String id, final Stream stream) {
         return new Callable<>() {
             @Override
@@ -192,6 +233,7 @@ public class OutputRegistry {
                 // through processing and output buffer processing handling.
                 // Without this check, we would start the output again after it has been stopped by removing it
                 // from a stream.
+                // 这里重新加载stream 确保读取的是最新数据
                 final Stream dbStream = streamService.load(stream.getId());
                 if (dbStream.getOutputs().stream().map(Output::getId).anyMatch(id::equalsIgnoreCase)) {
                     final Output output = outputService.load(id);
@@ -202,6 +244,13 @@ public class OutputRegistry {
         };
     }
 
+    /**
+     * 构建 messageOutput
+     * @param output
+     * @param stream
+     * @return
+     * @throws Exception
+     */
     protected MessageOutput launchOutput(Output output, Stream stream) throws Exception {
         final MessageOutput messageOutput = messageOutputFactory.fromStreamOutput(output, stream,
                 new org.graylog2.plugin.configuration.Configuration(output.getConfiguration()));
@@ -210,6 +259,7 @@ public class OutputRegistry {
             throw new IllegalArgumentException("Failed to instantiate MessageOutput from Output: " + output);
         }
 
+        // 需要进行初始化
         messageOutput.initialize();
 
         return messageOutput;
@@ -231,6 +281,11 @@ public class OutputRegistry {
         removeOutput(output.getId());
     }
 
+    /**
+     * 终止该output
+     *
+     * @param outputId
+     */
     private void removeOutput(String outputId) {
         final MessageOutput messageOutput = runningMessageOutputs.getIfPresent(outputId);
         if (messageOutput != null) {

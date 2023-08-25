@@ -21,6 +21,9 @@ import org.graylog.plugins.pipelineprocessor.EvaluationContext;
 
 import java.util.Collections;
 
+/**
+ * 该表达式会得到一个boolean   与BooleanExpression不同(它内部包含一个boolean常量)
+ */
 public class BooleanValuedFunctionWrapper extends BaseExpression implements LogicalExpression {
     private final Expression expr;
 

@@ -42,6 +42,9 @@ import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 使用es作为输出点
+ */
 public class ElasticSearchOutput implements MessageOutput {
     private static final String WRITES_METRICNAME = name(ElasticSearchOutput.class, "writes");
     private static final String FAILURES_METRICNAME = name(ElasticSearchOutput.class, "failures");
@@ -53,7 +56,15 @@ public class ElasticSearchOutput implements MessageOutput {
     private final Meter writes;
     private final Meter failures;
     private final Timer processTime;
+
+    /**
+     * 这个message 不是处理过程中使用的message
+     */
     private final Messages messages;
+
+    /**
+     * 难道是商业版才启用该功能?
+     */
     private final Journal journal;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     protected final MessageQueueAcknowledger acknowledger;
@@ -88,6 +99,12 @@ public class ElasticSearchOutput implements MessageOutput {
         throw new UnsupportedOperationException("Method not supported!");
     }
 
+    /**
+     * 将批量数据写入ES
+     * @param messageList
+     * @return
+     * @throws Exception
+     */
     public Set<String> writeMessageEntries(List<Map.Entry<IndexSet, Message>> messageList) throws Exception {
         if (LOG.isTraceEnabled()) {
             final String sortedIds = messageList.stream()

@@ -32,6 +32,9 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * 当message通过该对象进行输出时 就是简单的打印日志
+ */
 public class LoggingOutput implements MessageOutput {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingOutput.class);
     private final AtomicBoolean isRunning = new AtomicBoolean(false);

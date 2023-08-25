@@ -26,14 +26,21 @@ import java.util.List;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+/**
+ * 每个阶段 包含多个rule
+ */
 @AutoValue
 public abstract class Stage implements Comparable<Stage> {
     public enum Match {
         ALL, EITHER, PASS
     }
 
+    /**
+     * 每个rule有一个逻辑表达式和一组会话
+     */
     private List<Rule> rules;
     // not an autovalue property, because it introduces a cycle in hashCode() and we have no way of excluding it
+    // 该stage关联的pipeline
     private transient Pipeline pipeline;
     private transient Meter executed;
     private transient String meterName;

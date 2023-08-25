@@ -27,6 +27,11 @@ public class BooleanExpression extends ConstantExpression implements LogicalExpr
         this.value = value;
     }
 
+    /**
+     * 常量表达式么 计算就是直接返回值
+     * @param context
+     * @return
+     */
     @Override
     public Object evaluateUnsafe(EvaluationContext context) {
         return value;

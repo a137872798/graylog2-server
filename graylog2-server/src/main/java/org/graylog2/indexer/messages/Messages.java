@@ -72,12 +72,17 @@ public class Messages {
     @VisibleForTesting
     static final WaitStrategy exponentialWaitMilliseconds = WaitStrategies.exponentialWait(MAX_WAIT_TIME.getQuantity(), MAX_WAIT_TIME.getUnit());
 
+    /**
+     * 构建一个可重试对象
+     * @return
+     */
     @SuppressWarnings("UnstableApiUsage")
     private RetryerBuilder<List<IndexingError>> createBulkRequestRetryerBuilder() {
         return RetryerBuilder.<List<IndexingError>>newBuilder()
                 .retryIfException(t -> ExceptionUtils.hasCauseOf(t, IOException.class)
                         || t instanceof InvalidWriteTargetException
                         || t instanceof MasterNotDiscoveredException)
+                // 代表当出现以上异常时 等待一段时间后重试
                 .withWaitStrategy(WaitStrategies.exponentialWait(MAX_WAIT_TIME.getQuantity(), MAX_WAIT_TIME.getUnit()))
                 .withRetryListener(new RetryListener() {
                     @Override
@@ -92,6 +97,10 @@ public class Messages {
     }
 
     private final FailureSubmissionService failureSubmissionService;
+
+    /**
+     * 在这里可以选择 ES/OpenSearch
+     */
     private final MessagesAdapter messagesAdapter;
     private final ProcessingStatusRecorder processingStatusRecorder;
     private final TrafficAccounting trafficAccounting;
@@ -115,6 +124,11 @@ public class Messages {
         return messagesAdapter.analyze(toAnalyze, index, analyzer);
     }
 
+    /**
+     * 对一组消息进行批量写入
+     * @param messageList
+     * @return
+     */
     public Set<String> bulkIndex(final List<Map.Entry<IndexSet, Message>> messageList) {
         return bulkIndex(messageList, false, null);
     }
@@ -127,6 +141,13 @@ public class Messages {
         return bulkIndex(messageList, isSystemTraffic, null);
     }
 
+    /**
+     * 将数据批量写入到 ES
+     * @param messageList
+     * @param isSystemTraffic
+     * @param indexingListener
+     * @return
+     */
     public Set<String> bulkIndex(final List<Map.Entry<IndexSet, Message>> messageList, boolean isSystemTraffic, IndexingListener indexingListener) {
         if (messageList.isEmpty()) {
             return Set.of();
@@ -143,10 +164,20 @@ public class Messages {
         return bulkIndexRequests(indexingRequestList, isSystemTraffic, null);
     }
 
+    /**
+     * 批量写入数据
+     * @param indexingRequestList
+     * @param isSystemTraffic
+     * @param indexingListener
+     * @return
+     */
     public Set<String> bulkIndexRequests(List<IndexingRequest> indexingRequestList, boolean isSystemTraffic, IndexingListener indexingListener) {
+        // 此时已经将请求发往ES了
         final List<IndexingError> indexingErrors = runBulkRequest(indexingRequestList, indexingRequestList.size(), indexingListener);
 
+        // 针对特定失败类型的请求进行重试  剩余的类型
         final Set<IndexingError> remainingErrors = retryOnlyIndexBlockItemsForever(indexingRequestList, indexingErrors, indexingListener);
+
 
         final Set<String> failedIds = remainingErrors.stream()
                 .map(indexingError -> indexingError.message().getId())
@@ -161,9 +192,19 @@ public class Messages {
         return propagateFailure(remainingErrors);
     }
 
+    /**
+     * 针对写入失败的请求 进行重试
+     * @param messages
+     * @param allFailedItems
+     * @param indexingListener
+     * @return
+     */
     private Set<IndexingError> retryOnlyIndexBlockItemsForever(List<IndexingRequest> messages, List<IndexingError> allFailedItems, IndexingListener indexingListener) {
+        // 这些是IndexBlocked异常
         Set<IndexingError> indexBlocks = indexBlocksFrom(allFailedItems);
+        // 其余类型异常
         final Set<IndexingError> otherFailures = new HashSet<>(Sets.difference(new HashSet<>(allFailedItems), indexBlocks));
+        // 抽取出req
         List<IndexingRequest> blockedMessages = messagesForResultItems(messages, indexBlocks);
 
         if (!indexBlocks.isEmpty()) {
@@ -175,6 +216,7 @@ public class Messages {
         while (!indexBlocks.isEmpty()) {
             waitBeforeRetrying(attempt++);
 
+            // 重发请求
             final List<Messages.IndexingError> failedItems = runBulkRequest(blockedMessages, messages.size(), indexingListener);
 
             indexBlocks = indexBlocksFrom(failedItems);
@@ -191,6 +233,7 @@ public class Messages {
         return otherFailures;
     }
 
+    // 还原出message
     private List<IndexingRequest> messagesForResultItems(List<IndexingRequest> chunk, Set<IndexingError> indexBlocks) {
         final Set<String> blockedMessageIds = indexBlocks.stream().map(item -> item.message().getId()).collect(Collectors.toSet());
 
@@ -214,8 +257,17 @@ public class Messages {
         }
     }
 
+    /**
+     * 执行写入操作
+     * @param indexingRequestList
+     * @param count
+     * @param indexingListener
+     * @return
+     */
     @SuppressWarnings("UnstableApiUsage")
     private List<IndexingError> runBulkRequest(List<IndexingRequest> indexingRequestList, int count, @Nullable IndexingListener indexingListener) {
+
+        // 构建一个可重试对象
         final Retryer<List<IndexingError>> bulkRequestRetryer = indexingListener == null
                 ? createBulkRequestRetryerBuilder().build()
                 : createBulkRequestRetryerBuilder().withRetryListener(retryListenerFor(indexingListener)).build();
@@ -232,6 +284,11 @@ public class Messages {
         }
     }
 
+    /**
+     * 包装
+     * @param indexingListener
+     * @return
+     */
     @SuppressWarnings("UnstableApiUsage")
     private RetryListener retryListenerFor(IndexingListener indexingListener) {
         return new RetryListener() {

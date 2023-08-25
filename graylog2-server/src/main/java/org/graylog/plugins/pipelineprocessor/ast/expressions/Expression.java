@@ -24,12 +24,28 @@ import org.graylog.plugins.pipelineprocessor.EvaluationContext;
 import javax.annotation.Nullable;
 import java.util.Map;
 
+/**
+ * 表达式的一个部分
+ */
 public interface Expression {
 
+    /**
+     * 代表是一个常量表达式
+     * @return
+     */
     boolean isConstant();
 
+    /**
+     * 借助antlr4解析出来的token
+     * @return
+     */
     Token getStartToken();
 
+    /**
+     * 应该是对文本内容 通过antlr4进行分词解析  产生了多个expression 然后针对每个表达式进行计算 并将衍生出的message存储在上下文中
+     * @param context
+     * @return
+     */
     @Nullable
     default Object evaluate(EvaluationContext context) {
         try {
@@ -44,6 +60,7 @@ public interface Expression {
 
     /**
      * This method is allowed to throw exceptions. The outside world is supposed to call evaluate instead.
+     * 触发计算函数
      */
     @Nullable
     Object evaluateUnsafe(EvaluationContext context);
@@ -58,6 +75,10 @@ public interface Expression {
         return evaluateUnsafe(EvaluationContext.emptyContext());
     }
 
+    /**
+     * 表达式本身解析出来后是树形结构
+     * @return
+     */
     Iterable<Expression> children();
 
     default Type nodeType() {

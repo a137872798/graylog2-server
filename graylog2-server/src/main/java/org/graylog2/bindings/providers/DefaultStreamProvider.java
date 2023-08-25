@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 将提供Stream的对象注入到guice中
+ * 这个对象只能返回一个默认流
  */
 @Singleton
 public class DefaultStreamProvider implements Provider<Stream> {
@@ -41,6 +42,9 @@ public class DefaultStreamProvider implements Provider<Stream> {
      */
     private final StreamService service;
 
+    /**
+     * 维护默认流
+     */
     private AtomicReference<Stream> sharedInstance = new AtomicReference<>();
 
     @Inject

@@ -57,8 +57,10 @@ public class MessageFilterChainProcessor implements MessageProcessor {
         }
     }
 
+    // 目前只有2个内置filter 第一个 StaticFieldFilter 为message添加静态字段 第二个 ExtractorFilter 抽取关键字段加工后变成目标字段(包含转换逻辑)
     private final List<MessageFilter> filterRegistry;
     private final MetricRegistry metricRegistry;
+    // TODO 暂时忽略  应该是跟记录日志有关的
     private final MessageQueueAcknowledger messageQueueAcknowledger;
     private final ServerStatus serverStatus;
     private final Meter filteredOutMessages;
@@ -89,6 +91,11 @@ public class MessageFilterChainProcessor implements MessageProcessor {
         this.filteredOutMessages = metricRegistry.meter(name(ProcessBufferProcessor.class, "filteredOutMessages"));
     }
 
+    /**
+     * 处理消息
+     * @param messages
+     * @return
+     */
     @Override
     public Messages process(Messages messages) {
 
@@ -101,6 +108,7 @@ public class MessageFilterChainProcessor implements MessageProcessor {
                 try {
                     LOG.trace("Applying filter [{}] on message <{}>.", filter.getName(), msg.getId());
 
+                    // 返回true 代表消息会被丢弃 目前内置实现中 总是返回false
                     if (filter.filter(msg)) {
                         LOG.debug("Filter [{}] marked message <{}> to be discarded. Dropping message.",
                                 filter.getName(),

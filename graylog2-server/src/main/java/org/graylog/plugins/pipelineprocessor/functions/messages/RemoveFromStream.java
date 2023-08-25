@@ -41,6 +41,10 @@ public class RemoveFromStream extends AbstractFunction<Void> {
     public static final String NAME = "remove_from_stream";
     private static final String ID_ARG = "id";
     private static final String NAME_ARG = "name";
+
+    /**
+     * 为stream加了一层缓存
+     */
     private final StreamCacheService streamCacheService;
     private final Provider<Stream> defaultStreamProvider;
     private final ParameterDescriptor<Message, Message> messageParam;
@@ -62,6 +66,8 @@ public class RemoveFromStream extends AbstractFunction<Void> {
         Optional<String> id = idParam.optional(args, context);
 
         Collection<Stream> streams;
+
+        // 通过 id或者name 检索stream
         if (!id.isPresent()) {
             final Optional<Collection<Stream>> foundStreams = nameParam.optional(args, context).map(streamCacheService::getByName);
 
@@ -78,6 +84,8 @@ public class RemoveFromStream extends AbstractFunction<Void> {
             }
             streams = Collections.singleton(stream);
         }
+
+        // 从message上移除掉这个stream
         final Message message = messageParam.optional(args, context).orElse(context.currentMessage());
         streams.forEach(stream -> {
             if (!stream.isPaused()) {
@@ -85,6 +93,7 @@ public class RemoveFromStream extends AbstractFunction<Void> {
             }
         });
         // always leave a message at least on the default stream if we removed the last stream it was on
+        // 至少要保留一个默认流
         if (message.getStreams().isEmpty()) {
             message.addStream(defaultStreamProvider.get());
         }

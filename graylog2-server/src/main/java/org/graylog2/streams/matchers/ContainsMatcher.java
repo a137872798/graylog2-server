@@ -20,6 +20,13 @@ import org.graylog2.plugin.Message;
 import org.graylog2.plugin.streams.StreamRule;
 
 public class ContainsMatcher implements StreamRuleMatcher {
+
+    /**
+     * 该规则要求 消息必须包含 rule所指的某个字段
+     * @param msg
+     * @param rule
+     * @return
+     */
     @Override
     public boolean match(Message msg, StreamRule rule) {
         final boolean inverted = rule.getInverted();

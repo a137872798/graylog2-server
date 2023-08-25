@@ -27,6 +27,11 @@ import org.graylog.plugins.pipelineprocessor.ast.expressions.Expression;
 import javax.annotation.Nullable;
 import java.util.Optional;
 
+/**
+ * 代表参数的描述信息
+ * @param <T>
+ * @param <R>
+ */
 @AutoValue
 @JsonAutoDetect
 public abstract class ParameterDescriptor<T, R> {
@@ -107,20 +112,35 @@ public abstract class ParameterDescriptor<T, R> {
         return ParameterDescriptor.<T, R>param().type(typeClass).transformedType(transformedClass).name(name);
     }
 
+    /**
+     * 触发函数 并且返回值 or null
+     * @param args
+     * @param context
+     * @return
+     */
     @Nullable
     public R required(FunctionArgs args, EvaluationContext context) {
+        // 查看常量是否已经存在  存在的情况下转换类型后返回
         final Object precomputedValue = args.getPreComputedValue(name());
         if (precomputedValue != null) {
             return transformedType().cast(precomputedValue);
         }
+        // 获取对应的表达式 表达式不存在 也就无法使用本对象去处理表达式 返回null
         final Expression valueExpr = args.expression(name());
         if (valueExpr == null) {
             return null;
         }
+        // 执行表达式
         final Object value = valueExpr.evaluateUnsafe(context);
         return transformedType().cast(transform().apply(type().cast(value)));
     }
 
+    /**
+     * 触发函数 返回 optional
+     * @param args
+     * @param context
+     * @return
+     */
     public Optional<R> optional(FunctionArgs args, EvaluationContext context) {
         return Optional.ofNullable(required(args, context));
     }

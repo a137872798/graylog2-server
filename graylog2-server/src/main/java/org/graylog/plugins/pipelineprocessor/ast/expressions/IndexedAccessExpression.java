@@ -26,6 +26,9 @@ import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 一个是支持被索引的对象  一个是索引值
+ */
 public class IndexedAccessExpression extends BaseExpression {
     private final Expression indexableObject;
     private final Expression index;
@@ -48,6 +51,8 @@ public class IndexedAccessExpression extends BaseExpression {
         if (idxObj == null || indexable == null) {
             return null;
         }
+
+        // 也就是支持处理迭代器 数组 map
 
         if (idxObj instanceof Long) {
             int idx = Ints.saturatedCast((long) idxObj);

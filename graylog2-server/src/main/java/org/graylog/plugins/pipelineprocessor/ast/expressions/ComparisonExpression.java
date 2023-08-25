@@ -20,6 +20,9 @@ import org.antlr.v4.runtime.Token;
 import org.graylog.plugins.pipelineprocessor.EvaluationContext;
 import org.joda.time.DateTime;
 
+/**
+ * 描述一个比较关系 < > <= >=
+ */
 public class ComparisonExpression extends BinaryExpression implements LogicalExpression {
     private final String operator;
 

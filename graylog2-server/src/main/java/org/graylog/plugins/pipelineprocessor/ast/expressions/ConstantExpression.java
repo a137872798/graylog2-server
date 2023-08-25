@@ -20,8 +20,14 @@ import org.antlr.v4.runtime.Token;
 
 import java.util.Collections;
 
+/**
+ * 常量表达式
+ */
 public abstract class ConstantExpression extends BaseExpression {
 
+    /**
+     * 描述常量值的类型
+     */
     private final Class type;
 
     protected ConstantExpression(Token start, Class type) {
