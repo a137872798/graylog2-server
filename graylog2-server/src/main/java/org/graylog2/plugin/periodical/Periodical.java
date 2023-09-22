@@ -32,6 +32,7 @@ public abstract class Periodical implements Runnable {
      * on startup.
      *
      * @return
+     * 判断该任务是否会一直运行下去
      */
     public abstract boolean runsForever();
 
@@ -40,6 +41,7 @@ public abstract class Periodical implements Runnable {
      * This means that stop() is called and that is no longer triggered periodically.
      *
      * @return
+     * 是否优雅关闭
      */
     public abstract boolean stopOnGracefulShutdown();
 
@@ -68,6 +70,7 @@ public abstract class Periodical implements Runnable {
      * Start on this node? Useful to decide if to start the periodical based on local configuration.
      *
      * @return
+     * 判断任务是否已经开启
      */
     public abstract boolean startOnThisNode();
 

@@ -25,7 +25,17 @@ public interface IndexFieldTypePollerAdapter {
 
     int MAX_SEARCHES_PER_MULTI_SEARCH = 50;
 
+    /**
+     * 获取该索引下所有字段
+     * @param indexName
+     * @param pollTimer
+     * @return
+     */
     Optional<Set<FieldTypeDTO>> pollIndex(String indexName, Timer pollTimer);
 
+    /**
+     * 还需要检索这些field所属的stream
+     * @return
+     */
     boolean maintainsStreamBasedFieldLists();
 }

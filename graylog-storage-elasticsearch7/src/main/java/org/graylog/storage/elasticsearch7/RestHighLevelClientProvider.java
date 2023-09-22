@@ -40,6 +40,9 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+/**
+ * 产生一个es的rest客户端
+ */
 @Singleton
 public class RestHighLevelClientProvider implements Provider<RestHighLevelClient> {
     private final Supplier<RestHighLevelClient> clientSupplier;
@@ -48,7 +51,9 @@ public class RestHighLevelClientProvider implements Provider<RestHighLevelClient
     @Inject
     public RestHighLevelClientProvider(
             GracefulShutdownService shutdownService,
+            // 包含了所有es服务器的地址
             @IndexerHosts List<URI> hosts,
+            // 从配置文件中获取各种配置 进行注入
             @Named("elasticsearch_connect_timeout") Duration connectTimeout,
             @Named("elasticsearch_socket_timeout") Duration socketTimeout,
             @Named("elasticsearch_idle_timeout") Duration elasticsearchIdleTimeout,
@@ -106,6 +111,18 @@ public class RestHighLevelClientProvider implements Provider<RestHighLevelClient
         return this.clientSupplier.get();
     }
 
+    /**
+     * 生成一个 ES 客户端
+     * @param hosts
+     * @param connectTimeout
+     * @param socketTimeout
+     * @param maxTotalConnections
+     * @param maxTotalConnectionsPerRoute
+     * @param useExpectContinue
+     * @param muteElasticsearchDeprecationWarnings
+     * @param credentialsProvider
+     * @return
+     */
     private RestHighLevelClient buildClient(
             List<URI> hosts,
             Duration connectTimeout,
@@ -131,6 +148,7 @@ public class RestHighLevelClientProvider implements Provider<RestHighLevelClient
                         .setDefaultCredentialsProvider(credentialsProvider);
 
                     if(muteElasticsearchDeprecationWarnings) {
+                        // 剔除一些过期的warning
                         httpClientConfig.addInterceptorFirst(new ElasticsearchFilterDeprecationWarningsInterceptor());
                     }
 

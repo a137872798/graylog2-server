@@ -25,6 +25,8 @@ import java.util.Set;
  */
 public interface StreamsForFieldRetriever {
 
+    // 检索器 查找某个index下包含某field/某些field的所有stream
+
     Set<String> getStreams(final String fieldName, final String indexName);
 
     Map<String, Set<String>> getStreams(final List<String> fieldNames, final String indexName);

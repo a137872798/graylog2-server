@@ -41,6 +41,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * 该对象提供集群相关接口
+ */
 @Singleton
 public class Cluster {
     private static final Logger LOG = LoggerFactory.getLogger(Cluster.class);
@@ -48,6 +51,9 @@ public class Cluster {
     private final IndexSetRegistry indexSetRegistry;
     private final ScheduledExecutorService scheduler;
     private final Duration requestTimeout;
+    /**
+     * 该对象负责与存储引擎交互
+     */
     private final ClusterAdapter clusterAdapter;
 
     @Inject

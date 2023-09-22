@@ -437,6 +437,11 @@ public class IndicesAdapterES7 implements IndicesAdapter {
         return statsApi.storeSizes(index);
     }
 
+    /**
+     * 赋予目标index别名
+     * @param aliasName
+     * @param targetIndex
+     */
     @Override
     public void cycleAlias(String aliasName, String targetIndex) {
         final IndicesAliasesRequest.AliasActions addAlias = new IndicesAliasesRequest.AliasActions(IndicesAliasesRequest.AliasActions.Type.ADD)
@@ -489,6 +494,7 @@ public class IndicesAdapterES7 implements IndicesAdapter {
 
     @Override
     public IndexRangeStats indexRangeStatsOfIndex(String index) {
+        // 构建聚合条件
         final FilterAggregationBuilder builder = AggregationBuilders.filter("agg", QueryBuilders.existsQuery(Message.FIELD_TIMESTAMP))
                 .subAggregation(AggregationBuilders.min("ts_min").field(Message.FIELD_TIMESTAMP))
                 .subAggregation(AggregationBuilders.max("ts_max").field(Message.FIELD_TIMESTAMP))

@@ -63,6 +63,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * 提供访问ES集群信息能力的对象
+ */
 public class ClusterAdapterES7 implements ClusterAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ClusterAdapterES7.class);
     private final ElasticsearchClient client;
@@ -102,12 +105,14 @@ public class ClusterAdapterES7 implements ClusterAdapter {
     @Override
     public Set<NodeFileDescriptorStats> fileDescriptorStats() {
         final List<NodeResponse> result = nodes();
+        // 将res转换成节点描述信息
         return result.stream()
                 .map(node -> NodeFileDescriptorStats.create(node.name(), node.ip(), node.host(), node.fileDescriptorMax()))
                 .collect(Collectors.toSet());
     }
 
     private List<NodeResponse> nodes() {
+        // ES 开放了以_cat为开头的查看节点信息的endpoint
         final List<NodeResponse> allNodes = catApi.nodes();
         final List<NodeResponse> nodesWithDiskStatistics = allNodes.stream().filter(NodeResponse::hasDiskStatistics).collect(Collectors.toList());
         if (allNodes.size() != nodesWithDiskStatistics.size()) {
@@ -131,6 +136,7 @@ public class ClusterAdapterES7 implements ClusterAdapter {
         final ClusterGetSettingsRequest request = new ClusterGetSettingsRequest();
         request.includeDefaults(true);
 
+        // 不同的api 对应不同的converter converter中包含了对应的url
         final ClusterGetSettingsResponse response = client.execute((c, requestOptions) -> c.cluster().getSettings(request, requestOptions));
         return ClusterAllocationDiskSettingsFactory.create(
                 Boolean.parseBoolean(response.getSetting("cluster.routing.allocation.disk.threshold_enabled")),
@@ -164,6 +170,10 @@ public class ClusterAdapterES7 implements ClusterAdapter {
                 .filter(node -> !node.isMissingNode());
     }
 
+    /**
+     * isConnected 就是要求活跃的数据节点>1
+     * @return
+     */
     @Override
     public boolean isConnected() {
         final ClusterHealthRequest request = new ClusterHealthRequest()
@@ -301,6 +311,10 @@ public class ClusterAdapterES7 implements ClusterAdapter {
                 .orElseThrow(() -> new ElasticsearchException("Unable to retrieve shard stats."));
     }
 
+    /**
+     * 获取集群状态
+     * @return
+     */
     private Optional<ClusterHealthResponse> clusterHealth() {
         try {
             final ClusterHealthRequest request = new ClusterHealthRequest()

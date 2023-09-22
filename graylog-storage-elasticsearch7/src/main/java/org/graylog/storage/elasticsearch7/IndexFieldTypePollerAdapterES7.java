@@ -38,9 +38,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class IndexFieldTypePollerAdapterES7 implements IndexFieldTypePollerAdapter {
+
     private static final Logger LOG = LoggerFactory.getLogger(IndexFieldTypePollerAdapterES7.class);
     private final FieldMappingApi fieldMappingApi;
+
+    /**
+     * 还需要查看这些field关联到哪些stream
+     */
     private final boolean streamAwareFieldTypes;
+
+    /**
+     * 通过该对象可以查询包含某个field的所有stream
+     */
     private final StreamsForFieldRetriever streamsForFieldRetriever;
 
     @Inject
@@ -52,9 +61,16 @@ public class IndexFieldTypePollerAdapterES7 implements IndexFieldTypePollerAdapt
         this.streamsForFieldRetriever = streamsForFieldRetriever;
     }
 
+    /**
+     * 查看某个index下所有field
+     * @param indexName
+     * @param pollTimer
+     * @return
+     */
     @Override
     public Optional<Set<FieldTypeDTO>> pollIndex(String indexName, Timer pollTimer) {
         final Map<String, FieldMappingApi.FieldMapping> fieldTypes;
+
         try (final Timer.Context ignored = pollTimer.time()) {
             fieldTypes = fieldMappingApi.fieldTypes(indexName);
         } catch (IndexNotFoundException e) {
@@ -73,6 +89,7 @@ public class IndexFieldTypePollerAdapterES7 implements IndexFieldTypePollerAdapt
                 .filter(field -> !field.getValue().type().isEmpty())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+        // 不需要查询关联的stream
         if (!streamAwareFieldTypes) {
             return Optional.of(filteredFieldTypes.entrySet()
                     .stream()

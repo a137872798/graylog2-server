@@ -39,6 +39,9 @@ import org.graylog2.periodical.VersionCheckThread;
 import org.graylog2.plugin.periodical.Periodical;
 import org.graylog2.telemetry.cluster.TelemetryClusterInfoPeriodical;
 
+/**
+ * 这里用于设置所有的定时任务
+ */
 public class PeriodicalBindings extends AbstractModule {
     @Override
     protected void configure() {

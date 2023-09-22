@@ -134,6 +134,10 @@ public class ElasticsearchClient {
         }
     }
 
+    /**
+     * 查看是否支持压缩数据  这样服务器在返回数据时 会对数据进行压缩
+     * @return
+     */
     private RequestOptions requestOptions() {
         return compressionEnabled
                 ? RequestOptions.DEFAULT.toBuilder()

@@ -36,7 +36,7 @@ public class CountsAdapterES7 implements CountsAdapter {
     @Override
     public long totalCount(List<String> indices) {
         final SearchSourceBuilder query = new SearchSourceBuilder()
-                .query(QueryBuilders.matchAllQuery())
+                .query(QueryBuilders.matchAllQuery()) // 代表查询所有数据
                 .size(0)
                 .trackTotalHits(true);
         final SearchRequest searchRequest = new SearchRequest(indices.toArray(new String[0]))
@@ -44,6 +44,7 @@ public class CountsAdapterES7 implements CountsAdapter {
 
         final SearchResponse result = client.search(searchRequest, "Fetching message count failed for indices ");
 
+        // 返回总条数
         return result.getHits().getTotalHits().value;
     }
 }

@@ -26,6 +26,9 @@ public abstract class ClusterStats {
 
     public abstract NodesStats nodesStats();
 
+    /**
+     * 包含索引统计信息
+     */
     public abstract IndicesStats indicesStats();
 
     public static ClusterStats create(String clusterName, String clusterVersion, NodesStats nodesStats,

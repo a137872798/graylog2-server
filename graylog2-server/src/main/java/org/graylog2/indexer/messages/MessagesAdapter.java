@@ -22,6 +22,15 @@ import java.io.IOException;
 import java.util.List;
 
 public interface MessagesAdapter {
+
+    /**
+     * 通过messageId 匹配
+     * @param messageId
+     * @param index
+     * @return
+     * @throws IOException
+     * @throws DocumentNotFoundException
+     */
     ResultMessage get(String messageId, String index) throws IOException, DocumentNotFoundException;
 
     List<String> analyze(String toAnalyze, String index, String analyzer) throws IOException;

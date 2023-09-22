@@ -51,6 +51,11 @@ public interface IndicesAdapter {
      */
     void delete(String indexName);
 
+    /**
+     * 返回使用该别名的一组索引  多个索引是可以使用同一个别名的  实际上业务中只会使用一个
+     * @param alias
+     * @return
+     */
     Set<String> resolveAlias(String alias);
 
     /**
@@ -66,7 +71,7 @@ public interface IndicesAdapter {
      * @param mappingType target mapping type (e.g. message). Not relevant for ES7+ (will be simply ignored).
      * @param mapping field mappings
      *
-     *                 索引的内容是由 mapping来描述的    这里更新mapping信息
+     *                mapping 相当于 db的schema
      */
     void updateIndexMapping(@Nonnull String indexName, @Nonnull String mappingType, @Nonnull Map<String, Object> mapping);
 
@@ -87,7 +92,7 @@ public interface IndicesAdapter {
     Map<String, Object> getIndexMetaData(@Nonnull String indexName);
 
     /**
-     * 检测索引模板内容是否一致
+     * 创建索引模板
      * @param templateName
      * @param template
      * @return
@@ -95,7 +100,7 @@ public interface IndicesAdapter {
     boolean ensureIndexTemplate(String templateName, Map<String, Object> template);
 
     /**
-     * 检测模板是否存在
+     * 检测模板是否存在   索引模板的作用就是会自动将settings和mapping作用到之后创建且命中匹配的index上
      * @param templateName
      * @return
      */
@@ -105,52 +110,156 @@ public interface IndicesAdapter {
 
     Optional<DateTime> indexClosingDate(String index);
 
+    /**
+     * 开启索引  开启关闭就是决定索引能否使用
+     * @param index
+     */
     void openIndex(String index);
 
+    /**
+     * 将索引设置为只可读取 不可写入
+     * @param index
+     */
     void setReadOnly(String index);
 
     void flush(String index);
 
+    /**
+     * 将索引标记成 reopened状态
+     * @param index
+     */
     void markIndexReopened(String index);
 
+    /**
+     * 移除索引的某个别名
+     * @param indexName
+     * @param alias
+     */
     void removeAlias(String indexName, String alias);
 
+    /**
+     * 关闭索引
+     * @param indexName
+     */
     void close(String indexName);
 
+    /**
+     * 该索引下有多少记录
+     * @param indexName
+     * @return
+     */
     long numberOfMessages(String indexName);
 
+    /**
+     * 检查是否存在某个别名
+     * @param alias
+     * @return
+     * @throws IOException
+     */
     boolean aliasExists(String alias) throws IOException;
 
+    /**
+     * 查询某组索引的别名
+     * @param indexPattern
+     * @return
+     */
     Map<String, Set<String>> aliases(String indexPattern);
 
+    /**
+     * 删除某个索引模板
+     * @param templateName
+     * @return
+     */
     boolean deleteIndexTemplate(String templateName);
 
+    /**
+     * 查询这组索引的字段
+     * @param writeIndexWildcards
+     * @return
+     */
     Map<String, Set<String>> fieldsInIndices(String[] writeIndexWildcards);
 
+    /**
+     * 关闭一组索引
+     * @param indices
+     * @return
+     */
     Set<String> closedIndices(Collection<String> indices);
 
+    /**
+     * 获取索引的统计信息
+     * @param indices
+     * @return
+     */
     Set<IndexStatistics> indicesStats(Collection<String> indices);
 
     Optional<IndexStatistics> getIndexStats(String index);
 
+    /**
+     * 将索引统计数据 作为json来看待
+     * @param index
+     * @return
+     */
     JsonNode getIndexStats(Collection<String> index);
 
+    /**
+     * 查看这组索引的状态
+     * @param indices
+     * @return
+     */
     IndicesBlockStatus getIndicesBlocksStatus(List<String> indices);
 
+    /**
+     * 检查某个索引是否存在
+     * @param indexName
+     * @return
+     * @throws IOException
+     */
     boolean exists(String indexName) throws IOException;
 
+    /**
+     * 根据这些条件查询索引名
+     * @param indexWildcard
+     * @param status
+     * @param id
+     * @return
+     */
     Set<String> indices(String indexWildcard, List<String> status, String id);
 
+    /**
+     * 该索引下存储的数据总大小
+     * @param index
+     * @return
+     */
     Optional<Long> storeSizeInBytes(String index);
 
+    /**
+     * 应该是要把别名绑在新的index上
+     * @param aliasName
+     * @param targetIndex
+     */
     void cycleAlias(String aliasName, String targetIndex);
 
     void cycleAlias(String aliasName, String targetIndex, String oldIndex);
 
+    /**
+     * 从这些索引上移除掉该别名
+     */
     void removeAliases(Set<String> indices, String alias);
 
+    /**
+     * 代表对该index的多个segment进行合并
+     * @param index
+     * @param maxNumSegments
+     * @param timeout
+     */
     void optimizeIndex(String index, int maxNumSegments, Duration timeout);
 
+    /**
+     * 获取该索引多个range的统计数据
+     * @param index
+     * @return
+     */
     IndexRangeStats indexRangeStatsOfIndex(String index);
 
     HealthStatus waitForRecovery(String index);

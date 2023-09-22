@@ -18,6 +18,9 @@ package org.graylog2.plugin.indexer.rotation;
 
 import org.graylog2.indexer.IndexSet;
 
+/**
+ * 描述索引集的滚动策略
+ */
 public interface RotationStrategy {
     void rotate(IndexSet indexSet);
 

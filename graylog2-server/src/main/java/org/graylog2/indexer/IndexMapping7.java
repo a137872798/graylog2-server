@@ -34,6 +34,14 @@ public class IndexMapping7 extends IndexMapping {
         );
     }
 
+    /**
+     * 这里还需要相关参数来补充template
+     * @param template
+     * @param order
+     * @param settings
+     * @param mappings
+     * @return
+     */
     @Override
     Map<String, Object> createTemplate(String template, int order, Map<String, Object> settings, Map<String, Object> mappings) {
         return ImmutableMap.of(

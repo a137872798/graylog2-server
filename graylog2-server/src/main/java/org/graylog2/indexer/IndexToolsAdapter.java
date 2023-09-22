@@ -25,5 +25,11 @@ import java.util.Set;
 public interface IndexToolsAdapter {
     Map<DateTime, Map<String, Long>> fieldHistogram(String fieldName, Set<String> indices, Optional<Set<String>> includedStreams, long interval);
 
+    /**
+     * 从这些索引中 查找包含这些stream的所有数据总数
+     * @param indices
+     * @param includedStreams
+     * @return
+     */
     long count(Set<String> indices, Optional<Set<String>> includedStreams);
 }

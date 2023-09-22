@@ -97,9 +97,12 @@ public class IndexRangesResource extends RestResource {
     @ApiOperation(value = "Get a list of all index ranges")
     @Produces(MediaType.APPLICATION_JSON)
     public IndexRangesResponse list() {
+        // es为了避免某个index过大 允许滚动产生新的index 所以每个index有一个range
+        // 这里返回所有的indexRange对象
         final SortedSet<IndexRange> all = indexRangeService.findAll();
         final List<IndexRangeSummary> ranges = Lists.newArrayListWithCapacity(all.size());
         for (IndexRange range : all) {
+            // 检查当前用户名是否具备读取权限
             if (!isPermitted(RestPermissions.INDEXRANGES_READ, range.indexName())) {
                 continue;
             }

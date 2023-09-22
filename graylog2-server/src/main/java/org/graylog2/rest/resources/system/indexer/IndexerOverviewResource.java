@@ -58,6 +58,9 @@ import java.util.Optional;
 
 import static org.graylog2.shared.rest.documentation.generator.Generator.CLOUD_VISIBLE;
 
+/**
+ * 查看索引概述
+ */
 @RequiresAuthentication
 @Api(value = "Indexer/Overview", description = "Indexing overview", tags={CLOUD_VISIBLE})
 @Path("/system/indexer/overview")
@@ -87,17 +90,24 @@ public class IndexerOverviewResource extends RestResource {
         this.cluster = cluster;
     }
 
+    /**
+     * 获取当前索引集的状态
+     * @return
+     * @throws TooManyAliasesException
+     */
     @GET
     @Timed
     @ApiOperation(value = "Get overview of current indexing state, including deflector config, cluster state, index ranges & message counts.")
     @Produces(MediaType.APPLICATION_JSON)
     @Deprecated
     public IndexerOverview index() throws TooManyAliasesException {
+        // 要求能正常访问到es服务器  且datanode数量 >1
         if (!cluster.isConnected()) {
             throw new ServiceUnavailableException("Elasticsearch cluster is not available, check your configuration and logs for more information.");
         }
 
         try {
+            // 这里使用默认的索引集
             return getIndexerOverview(indexSetRegistry.getDefault());
         } catch (IllegalStateException e) {
             throw new NotFoundException("Default index set not found");
@@ -119,14 +129,26 @@ public class IndexerOverviewResource extends RestResource {
         return getIndexerOverview(indexSet);
     }
 
+    /**
+     * 获取索引概述
+     * @param indexSet
+     * @return
+     * @throws TooManyAliasesException
+     */
     private IndexerOverview getIndexerOverview(IndexSet indexSet) throws TooManyAliasesException {
         final String indexSetId = indexSet.getConfig().id();
 
+        // 先从mongodb中获取indexSet的相关信息
         final DeflectorSummary deflectorSummary = deflectorResource.deflector(indexSetId);
+        // 这里返回了所有indexRange的描述信息
         final List<IndexRangeSummary> indexRanges = indexRangesResource.list().ranges();
+
+        // 获取该索引集的全部统计信息
         final JsonNode indexStats = indices.getIndexStats(indexSet);
         final List<String> indexNames = new ArrayList<>();
+        // 把json打散后存入 indexNames中
         indexStats.fieldNames().forEachRemaining(indexNames::add);
+        // 根据索引是否有_reopened的别名 判断是否是 reopened索引
         final Map<String, Boolean> areReopened = indices.areReopened(indexNames);
         final List<IndexSummary> indicesSummaries = buildIndexSummaries(deflectorSummary, indexSet, indexRanges, indexStats, areReopened);
 

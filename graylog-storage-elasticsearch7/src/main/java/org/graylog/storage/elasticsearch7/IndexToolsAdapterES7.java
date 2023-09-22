@@ -51,6 +51,9 @@ import static org.graylog.shaded.elasticsearch7.org.elasticsearch.index.query.Qu
 import static org.graylog.shaded.elasticsearch7.org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.graylog.shaded.elasticsearch7.org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+/**
+ * 提供一些辅助能力
+ */
 public class IndexToolsAdapterES7 implements IndexToolsAdapter {
     private static final String AGG_DATE_HISTOGRAM = "source_date_histogram";
     private static final String AGG_MESSAGE_FIELD = "message_field";
@@ -69,6 +72,7 @@ public class IndexToolsAdapterES7 implements IndexToolsAdapter {
         final FilterAggregationBuilder the_filter = AggregationBuilders.filter(AGG_FILTER, queryBuilder)
                 .subAggregation(AggregationBuilders.dateHistogram(AGG_DATE_HISTOGRAM)
                         .field("timestamp")
+                        // 按照该字段进行划分
                         .subAggregation(AggregationBuilders.terms(AGG_MESSAGE_FIELD).field(fieldName))
                         .fixedInterval(new DateHistogramInterval(interval + "ms"))
                         // We use "min_doc_count" here to avoid empty buckets in the histogram result.
@@ -131,12 +135,12 @@ public class IndexToolsAdapterES7 implements IndexToolsAdapter {
 
             // If the included streams set contains the default stream, we also want all documents which do not
             // have any stream assigned. Those documents have basically been in the "default stream" which didn't
-            // exist in Graylog <2.2.0.
+            // exist in Graylog <2.2.0.   排除掉default_stream
             if (streams.contains(Stream.DEFAULT_STREAM_ID)) {
                 filterBuilder.should(boolQuery().mustNot(existsQuery(Message.FIELD_STREAMS)));
             }
 
-            // Only select messages which are assigned to the given streams
+            // Only select messages which are assigned to the given streams  查询streams匹配的数据
             filterBuilder.should(termsQuery(Message.FIELD_STREAMS, streams));
 
             queryBuilder.filter(filterBuilder);

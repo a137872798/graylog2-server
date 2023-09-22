@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 import static com.codahale.metrics.MetricRegistry.name;
 
 /**
- * 与ES的接入层
+ * 提供message相关的功能
  */
 public class MessagesAdapterES7 implements MessagesAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(MessagesAdapterES7.class);

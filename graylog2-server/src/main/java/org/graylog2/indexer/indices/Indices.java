@@ -59,7 +59,7 @@ import static org.graylog2.audit.AuditEventTypes.ES_INDEX_CREATE;
 import static org.graylog2.shared.utilities.StringUtils.f;
 
 /**
- * 代表一组索引
+ * 该对象作为全局单例 提供索引相关的能力
  */
 @Singleton
 public class Indices {
@@ -86,7 +86,7 @@ public class Indices {
     private final EventBus eventBus;
 
     /**
-     * 开放索引api 底层对接存储引擎
+     * 通过该对象与底层存储引擎交互
      */
     private final IndicesAdapter indicesAdapter;
 

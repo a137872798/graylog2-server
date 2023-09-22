@@ -57,10 +57,12 @@ public class IndexMappingFactory {
         final SearchVersion elasticsearchVersion = node.getVersion()
                 .orElseThrow(() -> new ElasticsearchException("Unable to retrieve Elasticsearch version."));
 
+        // 表示该index 会有一个默认type 叫做messages type对应db中的table
         final String templateType = indexSetConfig
                 .indexTemplateType()
                 .orElse(IndexSetConfig.DEFAULT_INDEX_TEMPLATE_TYPE);
 
+        // type messages/event 是不同的template
         return resolveIndexMappingTemplateProvider(templateType)
                 .create(elasticsearchVersion, indexSetConfig);
     }

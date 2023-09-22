@@ -71,7 +71,7 @@ public abstract class AbstractRotationStrategy implements RotationStrategy {
             return;
         }
 
-        // Refresh so we have current stats on idle indices
+        // Refresh so we have current stats on idle indices  先将此时索引数据刷盘
         indices.refresh(indexName);
 
         final Result rotate = shouldRotate(indexName, indexSet);

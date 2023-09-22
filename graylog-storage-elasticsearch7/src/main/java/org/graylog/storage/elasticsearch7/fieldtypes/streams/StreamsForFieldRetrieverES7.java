@@ -47,14 +47,22 @@ public class StreamsForFieldRetrieverES7 implements StreamsForFieldRetriever {
         this.client = client;
     }
 
+    /**
+     * 检索包含任意field的stream数据
+     * @param fieldNames
+     * @param indexName
+     * @return
+     */
     @Override
     public Map<String, Set<String>> getStreams(final List<String> fieldNames, final String indexName) {
+        // 查询每个field的信息
         final List<MultiSearchResponse.Item> multiSearchResponse = client.msearch(fieldNames.stream()
                         .map(fieldName -> createSearchRequest(fieldName, indexName))
                         .collect(Collectors.toList()),
                 "Unable to retrieve fields types aggregations");
 
 
+        // 每个field都会对应一组stream
         final List<Set<String>> streamsPerField = multiSearchResponse.stream()
                 .map(item -> retrieveStreamsFromAggregationInResponse(item.getResponse()))
                 .toList();
@@ -80,8 +88,10 @@ public class StreamsForFieldRetrieverES7 implements StreamsForFieldRetriever {
     private Set<String> retrieveStreamsFromAggregationInResponse(final SearchResponse searchResult) {
         final Aggregations aggregations = searchResult.getAggregations();
         if (aggregations != null) {
+            // 这个是聚合的名字
             final Aggregation streamsAggregation = aggregations.get(Message.FIELD_STREAMS);
 
+            // 获取聚合的key  也就是不同stream的名字  多个stream的数据都被发送到该index
             if (streamsAggregation instanceof MultiBucketsAggregation) {
                 final List<? extends MultiBucketsAggregation.Bucket> buckets = ((MultiBucketsAggregation) streamsAggregation).getBuckets();
                 if (buckets != null) {
@@ -106,10 +116,11 @@ public class StreamsForFieldRetrieverES7 implements StreamsForFieldRetriever {
                 .trackTotalHits(false)
                 .size(0);
 
+        // 在查询的时候使用了聚合函数
         searchSourceBuilder.aggregation(AggregationBuilders
-                .terms(Message.FIELD_STREAMS)
+                .terms(Message.FIELD_STREAMS)  // 聚合的名字 并且还表示采用term的聚合方式 代表将指定field相同的index进行聚合
                 .field(Message.FIELD_STREAMS)
-                .size(SEARCH_MAX_BUCKETS_ES));
+                .size(SEARCH_MAX_BUCKETS_ES)); // 每个bucket最多包含SEARCH_MAX_BUCKETS_ES
         return searchSourceBuilder;
     }
 

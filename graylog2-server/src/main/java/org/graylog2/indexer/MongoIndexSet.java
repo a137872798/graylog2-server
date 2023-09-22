@@ -170,7 +170,7 @@ public class MongoIndexSet implements IndexSet {
      */
     @Override
     public String[] getManagedIndices() {
-        // 查询满足正则的所有索引名  这些就是归属于该索引集的索引
+        // 查询满足正则的所有索引名  这些就是归属于该索引集的索引  因为索引会自动滚动 通配符可以理解为他们的前缀
         final Set<String> indexNames = indices.getIndexNamesAndAliases(getIndexWildcard()).keySet();
         // also allow restore archives to be returned
         final List<String> result = indexNames.stream()

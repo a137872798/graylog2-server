@@ -39,6 +39,10 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import java.util.Map;
 
+/**
+ * 该对象的生命周期由guice管理
+ * 为了避免index集过大 每当一定时间或者一定数据量 就要切换index 这个行为由该后台线程完成
+ */
 public class IndexRotationThread extends Periodical {
     private static final Logger LOG = LoggerFactory.getLogger(IndexRotationThread.class);
 
@@ -82,10 +86,11 @@ public class IndexRotationThread extends Periodical {
 
     @Override
     public void doRun() {
-        // Point deflector to a new index if required.
+        // Point deflector to a new index if required.  确保此时还能顺利访问到数据节点
         if (cluster.isConnected()) {
             indexSetRegistry.forEach((indexSet) -> {
                 try {
+                    // 仅处理可写入的indexSet 只读索引集 因为不会再继续写入数据了 所以可以忽略
                     if (indexSet.getConfig().isWritable()) {
                         checkAndRepair(indexSet);
                         checkForRotation(indexSet);
@@ -106,6 +111,10 @@ public class IndexRotationThread extends Periodical {
         return LOG;
     }
 
+    /**
+     * 尝试进行滚动
+     * @param indexSet
+     */
     protected void checkForRotation(IndexSet indexSet) {
         final IndexSetConfig config = indexSet.getConfig();
         final Provider<RotationStrategy> rotationStrategyProvider = rotationStrategyMap.get(config.rotationStrategyClass());
@@ -137,7 +146,12 @@ public class IndexRotationThread extends Periodical {
         notificationService.publishIfFirst(notification);
     }
 
+    /**
+     * 定期对可写索引集进行检查和维修
+     * @param indexSet
+     */
     protected void checkAndRepair(IndexSet indexSet) {
+        // 该索引集不存在可写别名 就会自动创建
         if (!indexSet.isUp()) {
             if (indices.exists(indexSet.getWriteIndexAlias())) {
                 // Publish a notification if there is an *index* called graylog2_deflector
@@ -149,10 +163,12 @@ public class IndexRotationThread extends Periodical {
                     LOG.warn("There is an index called [" + indexSet.getWriteIndexAlias() + "]. Cannot fix this automatically and published a notification.");
                 }
             } else {
+                // 生成新索引并将可写别名设置上去
                 indexSet.setUp();
             }
         } else {
             try {
+                // 获取当前可写索引
                 String currentTarget;
                 try {
                     currentTarget = indexSet.getActiveWriteIndex();
@@ -167,6 +183,7 @@ public class IndexRotationThread extends Periodical {
                         throw new IllegalStateException(e1);
                     }
                 }
+                // 这2个应该是一致的 不一致代表出现了错误
                 String shouldBeTarget = indexSet.getNewestIndex();
 
                 if (!shouldBeTarget.equals(currentTarget)) {
