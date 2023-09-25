@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 
 /**
  * MessageInput 可以产生并发送message IOState 描述input的状态
+ * 该对象提供了 MessageInput的检索,管理能力
  */
 @Singleton
 public class InputRegistry {

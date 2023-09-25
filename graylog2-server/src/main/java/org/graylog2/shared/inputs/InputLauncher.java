@@ -53,7 +53,7 @@ public class InputLauncher {
     private final InputBuffer inputBuffer;
 
     /**
-     * 描述被持久化的输入消息
+     * 应用在启动时 会加载该节点绑定的相关input
      */
     private final PersistedInputs persistedInputs;
     private final InputRegistry inputRegistry;
@@ -81,6 +81,11 @@ public class InputLauncher {
                 name(this.getClass(), "executor-service"));
     }
 
+    /**
+     * 当启动某个input时 以该方法为入口
+     * @param input
+     * @return
+     */
     public IOState<MessageInput> launch(final MessageInput input) {
         checkNotNull(input);
 
@@ -98,6 +103,7 @@ public class InputLauncher {
             inputState.setStoppable(input);
         }
 
+        // 将启动任务丢给后台
         executor.submit(new Runnable() {
             @Override
             public void run() {
@@ -134,6 +140,9 @@ public class InputLauncher {
         inputState.setState(IOState.Type.FAILED, causeMsg);
     }
 
+    /**
+     * 加载已经存在的所有input
+     */
     public void launchAllPersisted() {
         for (MessageInput input : persistedInputs) {
             if (leaderStatusInhibitsLaunch(input)) {
@@ -141,6 +150,7 @@ public class InputLauncher {
                         input.toIdentifier());
                 continue;
             }
+            // 还要确保打开 自动开启配置   或者之前处于开启状态   一个input刚创建时 还不会处于开启状态
             if (shouldStartAutomatically(input)) {
                 LOG.info("Launching input {} - desired state is {}",
                         input.toIdentifier(), input.getDesiredState());

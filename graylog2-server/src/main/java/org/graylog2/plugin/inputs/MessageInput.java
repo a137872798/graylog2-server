@@ -205,6 +205,7 @@ public abstract class MessageInput implements Stoppable {
     }
 
     /**
+     * 作为整个input的入口   首先用户在页面上创建messageInput 会进入mongodb 然后启动input 就会间接触发该方法
      * @param buffer
      * @param inputFailureRecorder
      * @throws MisfireException
@@ -446,7 +447,7 @@ public abstract class MessageInput implements Stoppable {
     }
 
     /**
-     * 处理原始消息
+     * 在传输层接收到原始消息后 转发到该方法进行处理
      * @param rawMessage
      */
     public void processRawMessage(RawMessage rawMessage) {

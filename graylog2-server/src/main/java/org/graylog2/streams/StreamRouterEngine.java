@@ -250,7 +250,7 @@ public class StreamRouterEngine {
         for (Stream stream : result) {
             streamMetrics.markIncomingMeter(stream.getId());
             if (stream.getRemoveMatchesFromDefaultStream()) {
-                // 把 defaultStream从msg上移除
+                // 此时消息已经能匹配上至少一个stream了  可以考虑移除 defaultStream
                 if (alreadyRemovedDefaultStream || message.removeStream(defaultStream)) {
                     alreadyRemovedDefaultStream = true;
                     if (LOG.isTraceEnabled()) {

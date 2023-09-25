@@ -65,6 +65,7 @@ public class InputBufferImpl implements InputBuffer {
         disruptor.setDefaultExceptionHandler(new LoggingExceptionHandler(LOG));
 
         final int numberOfHandlers = configuration.getInputbufferProcessors();
+
         if (configuration.isMessageJournalEnabled()) {
             LOG.info("Message journal is enabled.");
 

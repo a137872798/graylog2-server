@@ -44,7 +44,7 @@ import static com.google.common.base.Strings.emptyToNull;
 import static org.graylog2.shared.security.RestPermissions.INPUTS_READ;
 
 /**
- * 代表一个数据体
+ * 代表一个数据体  入库的时候只保存一些基础信息  在启动input时  会通过工厂构建 MessageInput 这时会完成相关transport的初始化
  */
 @DbEntity(collection = "inputs",
           readPermission = INPUTS_READ)

@@ -138,7 +138,6 @@ public class StreamServiceImpl extends PersistedServiceImpl implements StreamSer
         if (isNullOrEmpty(id)) {
             return null;
         }
-        // config id 和 index set是一个对象吗?
         final Optional<IndexSetConfig> indexSetConfig = indexSetService.get(id);
         return indexSetConfig.flatMap(c -> Optional.of(indexSetFactory.create(c))).orElse(null);
     }

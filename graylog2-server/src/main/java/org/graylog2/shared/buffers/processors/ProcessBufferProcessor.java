@@ -81,7 +81,7 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
     private final DecodingProcessor decodingProcessor;
 
     /**
-     * 通过该对象可以获取默认流
+     * 数据流在没有关联任何stream时 会关联到默认stream上
      */
     private final Provider<Stream> defaultStreamProvider;
     /**
@@ -103,7 +103,7 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
      * @param ulid
      * @param messageULIDGenerator
      * @param decodingProcessor
-     * @param defaultStreamProvider   会关联到 DefaultStreamProvider 上
+     * @param defaultStreamProvider
      * @param failureSubmissionService
      */
     @AssistedInject   // 这个注解的作用是 除了携带@Assisted注解的参数需要显式传入外 其他参数由guice进行辅助注入
@@ -213,7 +213,7 @@ public class ProcessBufferProcessor implements WorkHandler<MessageEvent> {
      * @param msg
      */
     private void handleMessage(@Nonnull Message msg) {
-        // 将message与默认流关联起来
+        // 先关联默认流 然后再跟其他流进行碰撞
         msg.addStream(defaultStreamProvider.get());
         Messages messages = msg;
 

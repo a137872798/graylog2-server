@@ -38,6 +38,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 
+/**
+ * 监听各类事件 再调用相关组件
+ */
 public class InputEventListener {
     private static final Logger LOG = LoggerFactory.getLogger(InputEventListener.class);
     private final InputLauncher inputLauncher;
@@ -67,12 +70,17 @@ public class InputEventListener {
         eventBus.register(this);
     }
 
+    /**
+     * 启动input时 产生事件 并被该对象监听到
+     * @param inputCreatedEvent
+     */
     @Subscribe
     public void inputCreated(InputCreated inputCreatedEvent) {
         final String inputId = inputCreatedEvent.id();
         LOG.debug("Input created: {}", inputId);
         final Input input;
         try {
+            // 需要先通过crud接口 添加input
             input = inputService.find(inputId);
         } catch (NotFoundException e) {
             LOG.warn("Received InputCreated event but could not find input {}", inputId, e);
@@ -115,6 +123,10 @@ public class InputEventListener {
         }
     }
 
+    /**
+     * 启动input
+     * @param input
+     */
     private void startInput(Input input) {
         final MessageInput messageInput;
         try {

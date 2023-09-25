@@ -196,7 +196,7 @@ public class BlockingBatchedESOutput extends ElasticSearchOutput {
             flushTask.cancel(false);
         }
 
-        // TODO 先忽略集群
+        // 在集群可用的情况下 强制刷盘剩余的数据
         if (cluster.isConnected() && cluster.isDeflectorHealthy()) {
             // Try to flush current batch. Time-limited to avoid blocking shutdown too long.
             final ExecutorService executorService = Executors.newSingleThreadExecutor(

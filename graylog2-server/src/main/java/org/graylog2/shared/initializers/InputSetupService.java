@@ -35,11 +35,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * 相当于 MessageInput的一个总集服务
+ */
 @Singleton
 public class InputSetupService extends AbstractExecutionThreadService {
     private static final Logger LOG = LoggerFactory.getLogger(InputSetupService.class);
+    /**
+     * 该对象管理 MessageInput
+     */
     private final InputRegistry inputRegistry;
     private final EventBus eventBus;
+    /**
+     * 该对象用于触发 消息接收
+     */
     private final InputLauncher inputLauncher;
 
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -84,6 +93,7 @@ public class InputSetupService extends AbstractExecutionThreadService {
         LOG.debug("Delaying launching persisted inputs until the node is in RUNNING state.");
         Uninterruptibles.awaitUninterruptibly(startLatch);
 
+        // 该服务一旦启动后 就会发射所有消息
         if (previousLifecycle.get() == Lifecycle.RUNNING) {
             LOG.debug("Launching persisted inputs now.");
             inputLauncher.launchAllPersisted();
@@ -112,6 +122,7 @@ public class InputSetupService extends AbstractExecutionThreadService {
 
             Stopwatch s = Stopwatch.createStarted();
             try {
+                // 挨个停止所有 input
                 input.stop();
 
                 LOG.info("Input {} closed. Took [{}ms]", input.toIdentifier(), s.elapsed(TimeUnit.MILLISECONDS));

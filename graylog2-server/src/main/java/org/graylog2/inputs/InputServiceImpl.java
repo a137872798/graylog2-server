@@ -461,7 +461,7 @@ public class InputServiceImpl extends PersistedServiceImpl implements InputServi
     }
 
     /**
-     * 一个Input对应一个MessageInput么?
+     * 当要启动某个input时  就会触发messageInput的创建  其中还包括相关transport的创建
      * @param io
      * @return
      * @throws NoSuchInputTypeException
