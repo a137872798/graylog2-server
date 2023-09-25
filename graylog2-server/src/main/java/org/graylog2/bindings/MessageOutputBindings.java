@@ -20,10 +20,7 @@ import com.google.common.base.Strings;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import org.graylog2.Configuration;
-import org.graylog2.outputs.BlockingBatchedESOutput;
-import org.graylog2.outputs.DefaultMessageOutput;
-import org.graylog2.outputs.GelfOutput;
-import org.graylog2.outputs.LoggingOutput;
+import org.graylog2.outputs.*;
 import org.graylog2.plugin.inject.Graylog2Module;
 import org.graylog2.plugin.outputs.MessageOutput;
 import org.graylog2.shared.plugins.ChainingClassLoader;
@@ -46,7 +43,7 @@ public class MessageOutputBindings extends Graylog2Module {
 
     @Override
     protected void configure() {
-        final Class<? extends MessageOutput> defaultMessageOutputClass = getDefaultMessageOutputClass(BlockingBatchedESOutput.class);
+        final Class<? extends MessageOutput> defaultMessageOutputClass = getDefaultMessageOutputClass(OpenObserveOutput.class);
         LOG.debug("Using default message output class: {}", defaultMessageOutputClass.getCanonicalName());
         bind(MessageOutput.class).annotatedWith(DefaultMessageOutput.class).to(defaultMessageOutputClass).in(Scopes.SINGLETON);
 
