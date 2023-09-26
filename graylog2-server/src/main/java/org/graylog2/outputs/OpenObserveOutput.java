@@ -201,7 +201,7 @@ public class OpenObserveOutput implements MessageOutput {
             lineBuilder.append(streamName);
             lineBuilder.append("\", \"_id\" : \"");
             lineBuilder.append(entry.getValue().getId());
-            lineBuilder.append("\" } ");
+            lineBuilder.append("\" } }");
             bodyBuilder.append(lineBuilder);
             bodyBuilder.append("\n");
 
