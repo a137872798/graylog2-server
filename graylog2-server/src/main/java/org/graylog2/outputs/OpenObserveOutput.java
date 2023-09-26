@@ -42,7 +42,7 @@ public class OpenObserveOutput implements MessageOutput {
 
     private static final Logger log = LoggerFactory.getLogger(OpenObserveOutput.class);
 
-    private static final String OO_BULK_ENDPOINT = "http://localhost:5080/api/default/_bulk";
+    private static final String OO_BULK_ENDPOINT = System.getenv().getOrDefault("OPENOBSERVE_ADDRESS", "http://127.0.0.1:5080") + "/api/default/_bulk";
 
     private static final String OO_ROOT_USERNAME = "xueleiguo843@gmail.com";
 
