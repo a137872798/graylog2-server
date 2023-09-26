@@ -358,11 +358,11 @@
                     <artifactId>spotbugs-maven-plugin</artifactId>
                     <version>4.7.1.1</version>
                 </plugin>
-                <plugin>
-                    <groupId>de.thetaphi</groupId>
-                    <artifactId>forbiddenapis</artifactId>
-                    <version>3.3</version>
-                </plugin>
+<!--                <plugin>-->
+<!--                    <groupId>de.thetaphi</groupId>-->
+<!--                    <artifactId>forbiddenapis</artifactId>-->
+<!--                    <version>3.3</version>-->
+<!--                </plugin>-->
                 <plugin>
                     <groupId>com.github.eirslett</groupId>
                     <artifactId>frontend-maven-plugin</artifactId>
