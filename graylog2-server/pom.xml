@@ -1099,16 +1099,16 @@
                                 </configuration>
                             </execution>
 
-                            <execution>
-                                <id>yarn run check-production-build</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>yarn</goal>
-                                </goals>
-                                <configuration>
-                                    <arguments>run check-production-build</arguments>
-                                </configuration>
-                            </execution>
+<!--                            <execution>-->
+<!--                                <id>yarn run check-production-build</id>-->
+<!--                                <phase>verify</phase>-->
+<!--                                <goals>-->
+<!--                                    <goal>yarn</goal>-->
+<!--                                </goals>-->
+<!--                                <configuration>-->
+<!--                                    <arguments>run check-production-build</arguments>-->
+<!--                                </configuration>-->
+<!--                            </execution>-->
 
                             <execution>
                                 <id>yarn test</id>

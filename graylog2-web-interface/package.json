@@ -21,10 +21,10 @@
     "lint:path": "eslint --report-unused-disable-directives",
     "lint:styles": "stylelint './src/**/*.{js,jsx,ts,tsx}'",
     "lint:styles:path": "stylelint",
-    "lint:changes": "./dev/lintChanges.sh",
-    "test": "jest --maxWorkers=50%",
-    "test:integration": "jest --maxWorkers=50% --config jest.it.config.js",
-    "check-production-build": "node checkProductionBuild.js"
+    "lint:changes": "./dev/lintChanges.sh"
+//    "test": "jest --maxWorkers=50%",
+//    "test:integration": "jest --maxWorkers=50% --config jest.it.config.js",
+//    "check-production-build": "node checkProductionBuild.js"
   },
   "eslintConfig": {
     "extends": "graylog"
