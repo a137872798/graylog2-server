@@ -229,12 +229,12 @@ public class OpenObserveOutput implements MessageOutput {
         try {
             response = okHttpClient.newCall(request).execute();
         } catch (IOException e) {
-            log.error("send bulk request fail error:{}", response.message(), e);
+            log.error("send bulk request fail resp:{}", response, e);
             throw new RuntimeException(e);
         }
 
         if (!response.isSuccessful()) {
-            log.error("write to OpenObserve fail code:{} error:{}", response.code(), response.message());
+            log.error("write to OpenObserve fail resp:{}", response);
             throw new RuntimeException("write to OpenObserve fail");
         }
     }
